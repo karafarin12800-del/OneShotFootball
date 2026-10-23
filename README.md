@@ -19,7 +19,7 @@
 
 ## Tech stack
 
-- Unity 6000.3.0f1 (Unity 6.3 LTS baseline)
+- Unity 6000.3.27f1 (Unity 6.3 LTS baseline)
 - C#; runtime-generated 3D meshes/materials from original code
 - Android portrait mode; touch controls and mouse controls for Editor/desktop
 - GitHub Actions source checks
@@ -34,7 +34,7 @@
 5. Open Assets/Scenes/Main.unity and press Play.
 6. For Android, install Android Build Support, SDK/NDK tools and OpenJDK, then build for Android.
 
-The stadium and characters are created procedurally at runtime, which avoids broken prefab references and avoids requiring paid assets just to start the prototype.
+The stadium, ball and stylized characters are generated from project-owned code at runtime. The first clone therefore has the required 3D geometry without paid assets. The resulting art is a low-poly prototype, not yet a polished, rigged character pack.
 
 ## Controls
 
