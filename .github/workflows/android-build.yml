@@ -36,7 +36,7 @@ jobs:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
         with:
           projectPath: .
-          unityVersion: 6000.3.0f1
+          unityVersion: 6000.3.27f1
           targetPlatform: Android
           buildMethod: OneShotFootball.Editor.AndroidBuild.BuildAndroidApk
           customParameters: -quit
