@@ -1,0 +1,50 @@
+name: Android APK build (Unity)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  license-check:
+    name: Check Unity license setup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require Unity license secret
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        shell: bash
+        run: |
+          if [ -z "$UNITY_LICENSE" ]; then
+            echo "::error::Missing repository secret UNITY_LICENSE. Obtain a valid Unity license file from Unity Hub and add it under Settings > Secrets and variables > Actions. Do not commit the license file."
+            exit 1
+          fi
+          echo "Unity license secret is present."
+
+  build-android:
+    name: Build Android APK
+    needs: license-check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Build with Unity
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        with:
+          projectPath: .
+          unityVersion: 6000.3.0f1
+          targetPlatform: Android
+          buildMethod: OneShotFootball.Editor.AndroidBuild.BuildAndroidApk
+          customParameters: -quit
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: OneShotFootball-Android-APK
+          path: Builds/Android/OneShotFootball.apk
+          if-no-files-found: error
+          retention-days: 14

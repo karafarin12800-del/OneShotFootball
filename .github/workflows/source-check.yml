@@ -1,0 +1,54 @@
+name: Source validation
+
+on:
+  push:
+    branches: [main, "feature/**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-check:
+    name: Validate Unity project source
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Validate required project files and JSON
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f ProjectSettings/ProjectVersion.txt
+          test -f Packages/manifest.json
+          test -f Assets/Scripts/OneShotFootballGame.cs
+          test -f Assets/Scripts/GoalkeeperController.cs
+          test -f Assets/Editor/ProjectBootstrap.cs
+          test -f Assets/Editor/AndroidBuild.cs
+          test -f ASSET_LICENSES.md
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          manifest = json.loads(Path("Packages/manifest.json").read_text())
+          assert "dependencies" in manifest
+          assert "com.unity.test-framework" in manifest["dependencies"]
+          project = Path("ProjectSettings/ProjectVersion.txt").read_text()
+          assert "6000.3.0f1" in project
+          for p in Path("Assets").rglob("*.cs"):
+              source = p.read_text(encoding="utf-8")
+              assert "\x00" not in source, f"NUL byte in {p}"
+              assert source.count("{") == source.count("}"), f"Brace count mismatch in {p}"
+          print("Project metadata and C# source structure look consistent.")
+          PY
+
+      - name: Check no common credential files are tracked
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git ls-files | grep -E '(^|/)([^/]*\.jks|[^/]*\.keystore|google-services\.json|[^/]*\.pem|[^/]*\.p12)$'; then
+            echo "Unexpected credential/signing file is tracked."
+            exit 1
+          fi
+          echo "No common signing/credential files found in tracked paths."
