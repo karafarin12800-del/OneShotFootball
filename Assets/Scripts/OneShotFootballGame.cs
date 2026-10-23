@@ -677,7 +677,6 @@ namespace OneShotFootball
             _ballBody.angularVelocity = Vector3.zero;
             _ballTransform.SetPositionAndRotation(new Vector3(0f, BallRadius + 0.025f, BallStartZ), Quaternion.identity);
             _ballBody.isKinematic = false;
-            _ballBody.Sleep();
         }
 
         private void BeginRound()
