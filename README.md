@@ -46,7 +46,7 @@ The stadium, ball and stylized characters are generated from project-owned code 
 
 ## Source and licensing
 
-See ASSET_LICENSES.md and Docs/COMPETITOR_RESEARCH.md. No third-party art/model binaries are bundled in this initial commit. We reviewed public asset sources as candidates, but this baseline deliberately stays playable without downloading uncertain assets or buying asset packs.
+See ASSET_LICENSES.md and Docs/COMPETITOR_RESEARCH.md. The original store-icon vector source is in BrandAssets/OneShotFootballIcon.svg; it is not yet wired into Unity player icon settings. No third-party art/model binaries are bundled in this initial commit. We reviewed public asset sources as candidates, but this baseline deliberately stays playable without downloading uncertain assets or buying asset packs.
 
 ## Build status
 
