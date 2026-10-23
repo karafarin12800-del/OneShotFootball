@@ -38,6 +38,8 @@ jobs:
         with:
           projectPath: .
           unityVersion: 6000.3.27f1
+          testMode: editmode
+          coverageEnabled: false
           githubToken: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build with Unity
