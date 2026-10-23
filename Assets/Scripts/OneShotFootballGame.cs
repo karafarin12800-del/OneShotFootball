@@ -202,7 +202,7 @@ namespace OneShotFootball
 
         private void BuildPitch()
         {
-            CreatePrimitive(PrimitiveType.Plane, "Pitch Base", Vector3.zero, new Vector3(2f, 1f, 3.6f), _grass, false);
+            CreatePrimitive(PrimitiveType.Plane, "Pitch Base", Vector3.zero, new Vector3(2f, 1f, 3.6f), _grass, true);
 
             for (int i = 0; i < 12; i++)
             {
