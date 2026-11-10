@@ -63,8 +63,8 @@ namespace OneShotFootball
             catalog = new List<CosmeticItem>
             {
                 new CosmeticItem("player.striker.blue", "Academy Striker", CosmeticCategory.Player, 0, true, "Starter player"),
-                new CosmeticItem("player.pro.forward", "Pro Forward", CosmeticCategory.Player, 600, false, "Cosmetic player model"),
-                new CosmeticItem("player.street.legend", "Street Legend", CosmeticCategory.Player, 900, false, "Cosmetic player model"),
+                new CosmeticItem("player.pro.forward", "Pro Forward Look", CosmeticCategory.Player, 600, false, "Appearance preset for the current player model"),
+                new CosmeticItem("player.street.legend", "Street Legend Look", CosmeticCategory.Player, 900, false, "Appearance preset for the current player model"),
                 new CosmeticItem("kit.classic.blue", "Classic Blue", CosmeticCategory.Kit, 0, true, "Starter home kit"),
                 new CosmeticItem("kit.neon", "Neon Pulse", CosmeticCategory.Kit, 180, false, "Alternate kit appearance"),
                 new CosmeticItem("kit.midnight", "Midnight Gold", CosmeticCategory.Kit, 300, false, "Alternate kit appearance"),
@@ -80,7 +80,15 @@ namespace OneShotFootball
         private void Load()
         {
             string json = PlayerPrefs.GetString(SaveKey, string.Empty);
-            _save = string.IsNullOrEmpty(json) ? new SaveData() : JsonUtility.FromJson<SaveData>(json);
+            try
+            {
+                _save = string.IsNullOrEmpty(json) ? new SaveData() : JsonUtility.FromJson<SaveData>(json);
+            }
+            catch (Exception exception)
+            {
+                Debug.LogWarning("OneShot Football: shop save is invalid and was reset. " + exception.Message);
+                _save = new SaveData();
+            }
             if (_save == null || _save.schemaVersion != 1) _save = new SaveData();
             if (_save.ownedIds == null) _save.ownedIds = new List<string>();
             _save.tokens = Mathf.Max(0, _save.tokens);
@@ -144,19 +152,6 @@ namespace OneShotFootball
             Save();
             StateChanged?.Invoke();
             return reward;
-        }
-
-        /// <summary>Call only after platform/server receipt verification. Not a UI callback.</summary>
-        internal bool GrantVerifiedTokenPack(int amount, string verifiedTransactionId)
-        {
-            if (amount <= 0 || string.IsNullOrWhiteSpace(verifiedTransactionId)) return false;
-            string transactionKey = "OneShotFootball.IAP.Transaction." + verifiedTransactionId;
-            if (PlayerPrefs.GetInt(transactionKey, 0) == 1) return false;
-            _save.tokens = Mathf.Min(999999, _save.tokens + amount);
-            PlayerPrefs.SetInt(transactionKey, 1);
-            Save();
-            StateChanged?.Invoke();
-            return true;
         }
 
         private CosmeticItem FindItem(string id) => string.IsNullOrEmpty(id) ? null : catalog.Find(item => item != null && item.id == id);
