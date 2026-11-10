@@ -15,6 +15,7 @@ namespace OneShotFootball
         private Camera _camera;
         private Rigidbody _cueBall;
         private Transform _cueStick;
+        private Renderer _cueRenderer;
         private PhysicMaterial _ballPhysics;
         private Material _cloth, _wood, _gold, _white, _black, _cueMat;
         private int _tokens, _pocketed, _objectBallsPocketed, _shots, _cueStyle;
@@ -34,6 +35,10 @@ namespace OneShotFootball
             Application.targetFrameRate = 60;
             Screen.orientation = ScreenOrientation.LandscapeLeft;
             _tokens = PlayerPrefs.GetInt("CueLegends.Tokens", 250);
+            for (int cue = 1; cue < 3; cue++)
+                if (PlayerPrefs.GetInt("CueLegends.Cue" + cue + "Owned", 0) == 1) _ownedCues.Add(cue);
+            _cueStyle = PlayerPrefs.GetInt("CueLegends.CueStyle", 0);
+            if (!_ownedCues.Contains(_cueStyle)) _cueStyle = 0;
             CreateMaterials();
             BuildTable();
             BuildCamera();
@@ -185,9 +190,19 @@ namespace OneShotFootball
             go.name = "Cue Stick";
             go.transform.localScale = new Vector3(0.035f, 1.9f, 0.035f);
             go.GetComponent<Collider>().enabled = false;
-            go.GetComponent<Renderer>().material = _cueMat;
+            _cueRenderer = go.GetComponent<Renderer>();
+            _cueRenderer.sharedMaterial = _cueMat;
             _cueStick = go.transform;
+            ApplyCueStyle();
             go.SetActive(false);
+        }
+
+        private void ApplyCueStyle()
+        {
+            if (_cueMat == null) return;
+            if (_cueStyle == 1) _cueMat.color = new Color(0.12f, 0.18f, 0.25f);
+            else if (_cueStyle == 2) _cueMat.color = new Color(0.82f, 0.57f, 0.2f);
+            else _cueMat.color = new Color(0.68f, 0.37f, 0.12f);
         }
 
         private void MakePocket(Vector3 position)
@@ -442,14 +457,23 @@ namespace OneShotFootball
                 string action = owned ? (_cueStyle == i ? "EQUIPPED" : "EQUIP") : "UNLOCK";
                 if (GUI.Button(new Rect(Screen.width / 2 + 80, y, 120, 42), action, _button))
                 {
-                    if (owned) _cueStyle = item;
+                    if (owned)
+                    {
+                        _cueStyle = item;
+                        PlayerPrefs.SetInt("CueLegends.CueStyle", _cueStyle);
+                        PlayerPrefs.Save();
+                        ApplyCueStyle();
+                    }
                     else if (_tokens >= prices[item])
                     {
                         _tokens -= prices[item];
                         _ownedCues.Add(item);
                         _cueStyle = item;
+                        PlayerPrefs.SetInt("CueLegends.Cue" + item + "Owned", 1);
+                        PlayerPrefs.SetInt("CueLegends.CueStyle", _cueStyle);
                         PlayerPrefs.SetInt("CueLegends.Tokens", _tokens);
                         PlayerPrefs.Save();
+                        ApplyCueStyle();
                     }
                 }
             }
