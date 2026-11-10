@@ -18,7 +18,7 @@ The IDs must be created with the same spelling in Google Play Console and App St
 - The client fetches native-store products and displays the localized platform price when available.
 - The checkout button remains disabled unless the store is connected, product data has loaded, an HTTPS validation endpoint is configured, and a trusted account-authentication integration supplies a session.
 - OnPurchasePending sends the store, SKU, transaction ID, receipt payload and installation ID to the backend.
-- The client grants a fixed SKU-mapped amount only after the backend response matches the store, SKU, transaction ID and exact token amount.
+- The client-side receipt request/response contract is scaffolded, but token-pack checkout is hard-disabled by a compile-time gate. It must stay disabled until the backend response also reconciles an authoritative account wallet and all token spending. The current local PlayerPrefs balance is not a production paid-currency wallet.
 - Unity IAP confirms the consumable order only after verification and local credit persistence succeed. Failed or unavailable verification leaves the order pending for retry.
 
 ## Required backend security
