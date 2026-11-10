@@ -1,70 +1,42 @@
-# OneShot Football
+# CUE LEGENDS
 
-**AIM. CURVE. SCORE.** — بازی فوتبال آرکید سه‌بعدی برای اندروید با کنترل لمسی و چالش ضربه پنالتی.
+**AIM. STRIKE. CONQUER.** — a 3D mobile billiards project built with Unity.
 
-## وضعیت پروژه / Project status
+## Product direction
+CUE LEGENDS converts the former OneShotFootball prototype into a mobile 8-ball pool game. The first playable slice focuses on a generated 3D table, a 16-ball rack, touch/mouse pull-back aiming, Rigidbody collisions, pocket triggers, pause and a local cosmetic cue shop. Practice credits are earned only from valid object-ball pockets; scratch shots do not earn credits, and the 8 ball must be pocketed last to win the solo clear-table round.
 
-این مخزن نسخه اولیه یک بازی آفلاین را تعریف می‌کند. زمین، دروازه، توپ، بازیکن، دروازه‌بان متحرک، مسیر نشانه‌گیری، امتیاز، دورهای پنج‌شاتی، مکث و رکورد با کد Unity ساخته می‌شوند؛ بنابراین شروع بازی وابسته به خرید یا دانلود یک بسته دارایی نیست.
+## Current status
+This work is on the feature/cue-legends-billiards branch. It is not yet store-ready. Unity Editor compilation, Play Mode, Android build and physical-device testing must pass before release claims are made.
 
-> شفافیت: سورس و ساختار اولیه در مخزن ثبت شده‌اند؛ این commit هنوز خروجی Unity یا APK آزمایش‌شده نیست. اجرای واقعی نیاز به بازکردن پروژه در Unity و آزمایش روی دستگاه دارد. ساخت Android در GitHub Actions به مجوز معتبر Unity نیاز دارد.
-
-## Game loop
-
-1. پنج شوت در هر دور.
-2. کشیدن انگشت برای تعیین جهت و ارتفاع توپ.
-3. رها کردن انگشت برای شوت.
-4. دروازه‌بان به‌صورت خودکار در امتداد دروازه حرکت می‌کند.
-5. گل‌ها امتیاز می‌دهند و رکورد روی دستگاه ذخیره می‌شود.
-6. بازی ابتدا آفلاین است. آنلاین، جدول سراسری، خرید درون‌برنامه‌ای و تبلیغات تا زمان طراحی و آزمایش جداگانه فعال نیستند.
-
-## Tech stack
-
-- Unity 6000.3.27f1 (Unity 6.3 LTS baseline)
-- C#; runtime-generated 3D meshes/materials from original code
-- Android portrait mode; touch controls and mouse controls for Editor/desktop
-- GitHub Actions source checks
-- Optional GameCI Android workflow; requires a valid Unity license secret
-
-## Open in Unity
-
-1. Clone this repository or download its ZIP.
-2. Open the project root in Unity Hub (folder containing Assets, Packages and ProjectSettings).
-3. Install the exact Editor version in ProjectSettings/ProjectVersion.txt.
-4. Wait for import. The Editor bootstrap creates Assets/Scenes/Main.unity and registers it in Build Settings if missing.
-5. Open Assets/Scenes/Main.unity and press Play.
-6. For Android, install Android Build Support, SDK/NDK tools and OpenJDK, then build for Android.
-
-The stadium, ball and stylized characters are generated from project-owned code at runtime. The first clone therefore has the required 3D geometry without paid assets. The resulting art is a low-poly prototype, not yet a polished, rigged character pack.
+**Online matchmaking and store purchases are not active.** They require a configured Unity Multiplayer Services project, a trusted authoritative match service, store product setup and server-side receipt validation. No wagering, paid match entry or cash-out is part of the product; tokens are for direct cosmetic unlocks only. See Docs/CUE_LEGENDS_PRODUCT_PLAN.md.
 
 ## Controls
+- Drag backward from the cue ball to aim and set power.
+- Release to strike.
+- Wait until all balls stop before the next shot.
+- Practice credits are local prototype values, not purchased currency or match stakes.
 
-- Swipe left/right to aim horizontally.
-- Swipe upward to raise the shot.
-- Release to shoot.
-- Pause is in the top-right HUD.
-- On desktop, click-drag-release with the mouse.
+## Tech
+- Unity 6000.3.27f1
+- C# and Unity Physics
+- Runtime-generated table and ball geometry
+- Android-first, landscape orientation
+- GitHub Actions source validation; Unity Android build requires a valid UNITY_LICENSE secret.
 
-## Source and licensing
+## Open
+1. Open the repository root in Unity Hub using version 6000.3.27f1.
+2. Wait for import and C# compilation.
+3. Open Assets/Scenes/Main.unity and press Play.
+4. Test aim, collisions, pockets, pause and shop.
+5. For Android, install Android Build Support, SDK/NDK and OpenJDK, then use CUE LEGENDS/Build Android APK.
 
-See ASSET_LICENSES.md and Docs/COMPETITOR_RESEARCH.md. The original store-icon vector source is in BrandAssets/OneShotFootballIcon.svg; it is not yet wired into Unity player icon settings. No third-party art/model binaries are bundled in this initial commit. We reviewed public asset sources as candidates, but this baseline deliberately stays playable without downloading uncertain assets or buying asset packs.
-
-## Build status
-
-- Source checks: .github/workflows/source-check.yml
-- Android build and test guide: Docs/BUILD_AND_TEST.md
-
-A green source-check workflow is not proof that Unity compiled the game. A successful Android build and a real-device test are separate acceptance gates.
-
-## Planned milestones
-
-- [x] Create the named GitHub repository and define scope.
-- [x] Add Unity project baseline, procedural gameplay, Editor bootstrap and source/license documentation.
-- [ ] Verify Unity compilation in Editor and fix any Console errors.
-- [ ] Test touch aim, save/goal detection, pause/resume and five-shot completion on Android.
-- [ ] Improve character animation, stadium detail, sound and accessibility.
-- [ ] Produce and device-test an APK.
-- [ ] Only after offline gameplay is stable, evaluate online features.
-
-## English
-
-OneShot Football is an original portrait-mode 3D arcade penalty challenge. Aim with a swipe, release to shoot, beat the moving goalkeeper and finish a five-shot round. The first version is offline and uses code-generated geometry so its first playable build has no mandatory paid art dependencies.
+## Milestones
+- [x] Establish CUE LEGENDS identity and Android package id.
+- [x] Replace the football scene bootstrap with a generated billiards prototype.
+- [x] Add local practice-token and cosmetic cue-shop prototype.
+- [ ] Validate compilation, physics and UI in Unity Editor.
+- [x] Add basic solo clear-table rules and EditMode tests for practice-credit rewards and 8-ball finish conditions.
+- [ ] Implement complete tournament-standard 8-ball rules and expand physics/rules tests.
+- [ ] Select and integrate an online provider and authoritative backend.
+- [ ] Integrate store billing with server-side receipt verification.
+- [ ] Complete Android device QA, release signing and store assets.

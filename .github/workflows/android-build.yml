@@ -1,15 +1,11 @@
-name: Android APK build (Unity)
-
+name: CUE LEGENDS Android APK build
 on:
   workflow_dispatch:
-
 permissions:
   contents: read
   checks: write
-
 jobs:
   license-check:
-    name: Check Unity license setup
     runs-on: ubuntu-latest
     steps:
       - name: Require Unity license secret
@@ -18,19 +14,14 @@ jobs:
         shell: bash
         run: |
           if [ -z "$UNITY_LICENSE" ]; then
-            echo "::error::Missing repository secret UNITY_LICENSE. Obtain a valid Unity license file from Unity Hub and add it under Settings > Secrets and variables > Actions. Do not commit the license file."
+            echo "::error::Missing repository secret UNITY_LICENSE. Add a valid Unity license through repository Settings > Secrets and variables > Actions. Never commit the license file."
             exit 1
           fi
-          echo "Unity license secret is present."
-
   build-android:
-    name: Build Android APK
     needs: license-check
     runs-on: ubuntu-latest
     steps:
-      - name: Check out source
-        uses: actions/checkout@v4
-
+      - uses: actions/checkout@v4
       - name: Run Unity EditMode tests
         uses: game-ci/unity-test-runner@v4
         env:
@@ -41,8 +32,7 @@ jobs:
           testMode: editmode
           coverageEnabled: false
           githubToken: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build with Unity
+      - name: Build Android APK
         uses: game-ci/unity-builder@v4
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
@@ -52,11 +42,9 @@ jobs:
           targetPlatform: Android
           buildMethod: OneShotFootball.Editor.AndroidBuild.BuildAndroidApk
           customParameters: -quit
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
-          name: OneShotFootball-Android-APK
-          path: Builds/Android/OneShotFootball.apk
+          name: CUE-LEGENDS-Android-APK
+          path: Builds/Android/CUELEGENDS.apk
           if-no-files-found: error
           retention-days: 14
