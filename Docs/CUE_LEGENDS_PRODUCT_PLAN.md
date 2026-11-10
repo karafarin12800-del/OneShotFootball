@@ -8,12 +8,18 @@
 - Visual direction: premium dark tournament room, emerald cloth, walnut rails and warm brass accents.
 
 ## Current implementation milestone
-PoolGameController replaces the football prototype as the scene entry point and generates a 3D pool-table blockout at runtime. It includes a cue ball, 15 numbered balls, rack setup, touch/mouse pull-back aiming, Rigidbody collisions, six pocket triggers, pause, a local token counter and a local cosmetic cue shop.
+PoolGameController replaces the football prototype as the scene entry point and generates a 3D pool-table blockout at runtime. It includes a cue ball, 15 numbered balls, rack setup, touch/mouse pull-back aiming, Rigidbody collisions, six pocket triggers, pause, a local practice-credit counter and a local cosmetic cue shop.
 
-This is a first playable vertical slice, not a finished commercial billiards game. The current rules are simplified: full WPA/BCA rules, legal break validation, first-contact checks, ball-in-hand, group assignment, turn ownership and authoritative match results are not complete.
+The practice loop now settles rewards after each shot: only valid object-ball pockets earn practice credits; a cue-ball scratch invalidates that shot's credit reward; and the 8 ball wins only when it is pocketed after the other object balls, without a scratch on that shot. These are solo clear-table practice rules, not a claim of complete tournament-standard 8-ball rules.
+
+This remains a prototype. Full WPA/BCA rules, legal-break validation, first-contact checks, called shots, ball-in-hand, solids/stripes assignment, opponent turn ownership and authoritative online results are not complete.
 
 ## Online architecture — required before enabling multiplayer
-Use a server-authoritative match model. A client submits intended cue input (aim vector, power, spin); it must not submit authoritative ball positions, pocket outcomes, match winner or currency rewards. The match service validates turn ownership and legal state, simulates or verifies physics, and broadcasts sequenced state snapshots/events. Reconnects restore the server match snapshot. Matchmaking filters by region, latency, skill rating and queue timeout. Add rate limits, replay detection, input bounds and match audit logs.
+Use Unity Multiplayer Services (MPS) Sessions with Netcode for GameObjects (NGO) as the initial Unity-side connection/session integration for this GameObject-based project. MPS Sessions can coordinate player grouping and connection setup; Relay can route peer traffic, but a Relay/P2P host is not a trusted dedicated game server.
+
+For production competitive matches and any currency grants, use a trusted authoritative server/service. A client submits only intended cue input (aim vector, power, spin); it must not submit authoritative ball positions, pocket outcomes, match winner or currency rewards. The authority validates turn ownership and legal state, simulates or verifies physics, and broadcasts sequenced state snapshots/events. Reconnects restore the authoritative match snapshot. Matchmaking filters by region, latency, skill rating and queue timeout. Add rate limits, replay detection, input bounds and match audit logs.
+
+Do not enable token wagering, paid match entry, cash-out, or prize payouts. Purchased or earned tokens are limited to direct cosmetic unlocks; no random paid rewards.
 
 Staged rollout:
 1. Local practice and deterministic rules tests.
