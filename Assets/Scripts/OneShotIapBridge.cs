@@ -236,6 +236,7 @@ namespace OneShotFootball
 
                 bool responseMatches = response != null
                     && response.approved
+                    && response.store == payload.store
                     && response.transactionId == transactionId
                     && response.productId == productId
                     && response.tokenAmount == expectedTokens;
@@ -292,6 +293,7 @@ namespace OneShotFootball
         private sealed class ReceiptValidationResponse
         {
             public bool approved;
+            public string store;
             public string transactionId;
             public string productId;
             public int tokenAmount;
