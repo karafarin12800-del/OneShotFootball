@@ -33,9 +33,14 @@ namespace OneShotFootball
         private bool _processingOrder;
         private string _status = "Store not configured.";
 
+        // Deliberately false until the game has an authenticated account service and
+        // a server-authoritative wallet that also handles cosmetic token debits.
+        private const bool ServerWalletIntegrationVerified = false;
+
         public bool IsConnected => _connected;
         public bool CanPurchaseTokenPacks =>
-            _connected && _productsFetched && _economy != null && IsSecureEndpointConfigured &&
+            ServerWalletIntegrationVerified && _connected && _productsFetched &&
+            _economy != null && IsSecureEndpointConfigured &&
             !string.IsNullOrWhiteSpace(_authenticatedPlayerSessionToken);
         public string Status => _status;
 
@@ -61,6 +66,8 @@ namespace OneShotFootball
         public void SetAuthenticatedPlayerSession(string bearerToken)
         {
             _authenticatedPlayerSessionToken = bearerToken ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(_authenticatedPlayerSessionToken) && _productsFetched)
+                _store?.FetchPurchases();
         }
 
         public void ClearAuthenticatedPlayerSession()
@@ -86,7 +93,7 @@ namespace OneShotFootball
                 _connected = true;
                 _status = IsSecureEndpointConfigured
                     ? "Connected to store. Loading token packs..."
-                    : "Store connected. Purchases remain disabled until HTTPS receipt verification is configured.";
+                    : "Store connected. Prices can load, but checkout stays disabled until the server wallet is implemented.";
 
                 _store.FetchProducts(new List<ProductDefinition>
                 {
@@ -122,7 +129,7 @@ namespace OneShotFootball
         {
             if (!CanPurchaseTokenPacks)
             {
-                _status = "Checkout is disabled until store products and secure receipt verification are ready.";
+                _status = "Checkout is disabled until the authenticated account and server-authoritative wallet are implemented and verified.";
                 return;
             }
 
@@ -154,7 +161,7 @@ namespace OneShotFootball
             _productsFetched = true;
             _status = IsSecureEndpointConfigured
                 ? "Token packs loaded. Prices are supplied by the store."
-                : "Prices loaded. Checkout disabled until HTTPS receipt verification is configured.";
+                : "Prices loaded. Checkout disabled until the server-authoritative wallet is implemented.";
 
             // Fetching outstanding transactions allows Unity IAP to redeliver unprocessed orders.
             _store?.FetchPurchases();
@@ -182,9 +189,9 @@ namespace OneShotFootball
                 return;
             }
 
-            if (!IsSecureEndpointConfigured || _economy == null)
+            if (!CanPurchaseTokenPacks)
             {
-                _status = "Purchase is pending. Configure receipt verification before currency can be granted.";
+                _status = "Purchase is pending. A verified account and server wallet are not configured; no tokens were granted.";
                 return;
             }
 
