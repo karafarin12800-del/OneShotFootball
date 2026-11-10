@@ -10,7 +10,7 @@ namespace OneShotFootball
         private const float BallStartZ = -8.15f;
         private const float BallRadius = 0.23f;
 
-        private enum GameState { Menu, Ready, InFlight, ShotResult, Paused, Results }
+        private enum GameState { Menu, Ready, InFlight, ShotResult, Paused, Results, Shop }
 
         private GameState _state = GameState.Menu;
         private GameState _stateBeforePause;
@@ -23,6 +23,22 @@ namespace OneShotFootball
         private int _pointsEarned;
         private string _lastResult = string.Empty;
         private Color _lastResultColor = Color.white;
+
+        private CosmeticShopEconomy _shopEconomy;
+        private OneShotIapBridge _iapBridge;
+        private bool _showTokenPacks;
+        private GoalkeeperController _goalkeeperController;
+        private FootballerAppearance _playerAppearance;
+        private GameObject _playerRoot;
+        private string _activePlayerPrefabId = string.Empty;
+        private Renderer _captainBandRenderer;
+        private FootballerAnimationDriver _kickerAnimation;
+        private GameState _stateBeforeShop;
+        private CosmeticCategory _shopCategory = CosmeticCategory.Player;
+        private string _shopStatus = "Earn tokens by completing five-shot rounds.";
+        private int _goalsThisRound;
+        private int _roundTokenReward;
+        private bool _roundRewardGranted;
 
         private Material _grass;
         private Material _grassAlt;
@@ -81,6 +97,12 @@ namespace OneShotFootball
 #endif
             Physics.gravity = new Vector3(0f, -9.81f, 0f);
             _bestScore = PlayerPrefs.GetInt("OneShotFootball.BestScore", 0);
+            _shopEconomy = GetComponent<CosmeticShopEconomy>();
+            if (_shopEconomy == null) _shopEconomy = gameObject.AddComponent<CosmeticShopEconomy>();
+            _shopEconomy.StateChanged += OnShopStateChanged;
+            _iapBridge = GetComponent<OneShotIapBridge>();
+            if (_iapBridge == null) _iapBridge = gameObject.AddComponent<OneShotIapBridge>();
+            _iapBridge.Initialize(_shopEconomy);
             CreateMaterials();
             BuildWorld();
         }
@@ -110,6 +132,11 @@ namespace OneShotFootball
                 {
                     if (_shotsTaken >= MaxShots)
                     {
+                        if (!_roundRewardGranted && _shopEconomy != null)
+                        {
+                            _roundTokenReward = _shopEconomy.AwardCompletedRoundTokens(_score, _goalsThisRound);
+                            _roundRewardGranted = true;
+                        }
                         _state = GameState.Results;
                     }
                     else
@@ -133,6 +160,7 @@ namespace OneShotFootball
             DestroyGuiTexture(_hudTexture);
             DestroyGuiTexture(_buttonTexture);
             DestroyGuiTexture(_buttonPressedTexture);
+            if (_shopEconomy != null) _shopEconomy.StateChanged -= OnShopStateChanged;
         }
 
         private void CreateMaterials()
@@ -198,6 +226,7 @@ namespace OneShotFootball
             BuildBall();
             BuildCamera();
             BuildAimGuide();
+            ApplyEquippedCosmetics();
         }
 
         private void BuildPitch()
@@ -305,7 +334,9 @@ namespace OneShotFootball
         private void BuildPlayer()
         {
             var player = new GameObject("Blue Team Kicker");
+            _playerRoot = player;
             player.transform.position = new Vector3(0f, 0f, -9.1f);
+            _kickerAnimation = player.AddComponent<FootballerAnimationDriver>();
 
             MakePart(player.transform, PrimitiveType.Capsule, "Jersey", new Vector3(0f, 1.25f, 0f),
                 new Vector3(0.68f, 0.66f, 0.36f), _blueKit, false);
@@ -317,6 +348,10 @@ namespace OneShotFootball
                 new Vector3(0.43f, 0.20f, 0.42f), _hair, false);
             MakePart(player.transform, PrimitiveType.Cube, "Jersey Back Stripe", new Vector3(0f, 1.36f, -0.187f),
                 new Vector3(0.07f, 0.54f, 0.025f), _blueAccent, false);
+            GameObject captainBand = MakePart(player.transform, PrimitiveType.Cube, "Captain Armband",
+                new Vector3(-0.405f, 1.51f, 0.01f), new Vector3(0.205f, 0.09f, 0.205f), _orangeAccent, false);
+            _captainBandRenderer = captainBand.GetComponent<Renderer>();
+            _captainBandRenderer.enabled = false;
 
             MakePart(player.transform, PrimitiveType.Capsule, "Left Arm", new Vector3(-0.39f, 1.30f, 0.01f),
                 new Vector3(0.18f, 0.46f, 0.18f), _blueKit, false, new Vector3(0f, 0f, 10f));
@@ -336,24 +371,40 @@ namespace OneShotFootball
             MakePart(kickPivot.transform, PrimitiveType.Cube, "Right Boot", new Vector3(0f, -0.44f, 0.15f),
                 new Vector3(0.31f, 0.13f, 0.38f), _shoes, false);
             _kickLegPivot = kickPivot.transform;
+            _playerAppearance = player.AddComponent<FootballerAppearance>();
+            _playerAppearance.RefreshRenderers();
         }
 
         private void BuildGoalkeeper()
         {
-            var keeperRoot = new GameObject("Moving Goalkeeper");
-            keeperRoot.transform.position = new Vector3(0f, 0f, GoalLineZ - 0.62f);
+            GameObject goalkeeperPrefab = Resources.Load<GameObject>("Characters/Goalkeeper");
+            var keeperRoot = goalkeeperPrefab != null
+                ? Instantiate(goalkeeperPrefab)
+                : new GameObject("Moving Goalkeeper");
+            keeperRoot.name = "Moving Goalkeeper";
+            keeperRoot.transform.SetPositionAndRotation(
+                new Vector3(0f, 0f, GoalLineZ - 0.62f),
+                goalkeeperPrefab != null ? Quaternion.Euler(0f, 180f, 0f) : Quaternion.identity);
 
-            var keeperBody = keeperRoot.AddComponent<Rigidbody>();
+            var keeperBody = keeperRoot.GetComponent<Rigidbody>();
+            if (keeperBody == null) keeperBody = keeperRoot.AddComponent<Rigidbody>();
             keeperBody.isKinematic = true;
             keeperBody.useGravity = false;
             keeperBody.constraints = RigidbodyConstraints.FreezeRotation;
 
-            var keeperCollider = keeperRoot.AddComponent<CapsuleCollider>();
-            keeperCollider.radius = 0.59f;
-            keeperCollider.height = 1.95f;
-            keeperCollider.center = new Vector3(0f, 0.98f, 0f);
+            var keeperCollider = keeperRoot.GetComponent<CapsuleCollider>();
+            if (keeperCollider == null && keeperRoot.GetComponent<Collider>() == null)
+                keeperCollider = keeperRoot.AddComponent<CapsuleCollider>();
+            if (keeperCollider != null)
+            {
+                keeperCollider.radius = 0.59f;
+                keeperCollider.height = 1.95f;
+                keeperCollider.center = new Vector3(0f, 0.98f, 0f);
+            }
 
-            MakePart(keeperRoot.transform, PrimitiveType.Capsule, "Orange Jersey", new Vector3(0f, 1.22f, 0f),
+            if (goalkeeperPrefab == null)
+            {
+                MakePart(keeperRoot.transform, PrimitiveType.Capsule, "Orange Jersey", new Vector3(0f, 1.22f, 0f),
                 new Vector3(0.67f, 0.64f, 0.37f), _orangeKit, false);
             MakePart(keeperRoot.transform, PrimitiveType.Cube, "Keeper Shorts", new Vector3(0f, 0.64f, 0.015f),
                 new Vector3(0.63f, 0.32f, 0.38f), _shorts, false);
@@ -369,9 +420,14 @@ namespace OneShotFootball
                 new Vector3(0.19f, 0.40f, 0.19f), _blueAccent, false);
             MakePart(keeperRoot.transform, PrimitiveType.Capsule, "Keeper Right Leg", new Vector3(0.19f, 0.32f, 0f),
                 new Vector3(0.19f, 0.40f, 0.19f), _blueAccent, false);
+            }
 
-            var controller = keeperRoot.AddComponent<GoalkeeperController>();
-            controller.Initialize(this, keeperRoot, keeperBody);
+            var keeperDriver = keeperRoot.GetComponent<FootballerAnimationDriver>();
+            if (keeperDriver == null) keeperDriver = keeperRoot.AddComponent<FootballerAnimationDriver>();
+            keeperDriver.RefreshAnimator();
+            _goalkeeperController = keeperRoot.GetComponent<GoalkeeperController>();
+            if (_goalkeeperController == null) _goalkeeperController = keeperRoot.AddComponent<GoalkeeperController>();
+            _goalkeeperController.Initialize(this, keeperRoot, keeperBody);
         }
 
         private void BuildBall()
@@ -602,6 +658,8 @@ namespace OneShotFootball
 
             if (_kickLegPivot != null)
                 _kickAnimationTimer = 0.32f;
+            if (_kickerAnimation != null) _kickerAnimation.PlayKick();
+            if (_goalkeeperController != null) _goalkeeperController.ReactToShot(target.x);
         }
 
         private void UpdateKickAnimation()
@@ -645,6 +703,8 @@ namespace OneShotFootball
             _pointsEarned = 0;
             if (goal)
             {
+                _goalsThisRound++;
+                if (_kickerAnimation != null) _kickerAnimation.PlayCelebrate();
                 _streak++;
                 _pointsEarned = ShotScoringRules.PointsForStreak(_streak);
                 _score += _pointsEarned;
@@ -677,6 +737,7 @@ namespace OneShotFootball
             _ballBody.angularVelocity = Vector3.zero;
             _ballTransform.SetPositionAndRotation(new Vector3(0f, BallRadius + 0.025f, BallStartZ), Quaternion.identity);
             _ballBody.isKinematic = false;
+            if (_goalkeeperController != null) _goalkeeperController.ResetForNextShot();
         }
 
         private void BeginRound()
@@ -686,6 +747,9 @@ namespace OneShotFootball
             _score = 0;
             _streak = 0;
             _pointsEarned = 0;
+            _goalsThisRound = 0;
+            _roundTokenReward = 0;
+            _roundRewardGranted = false;
             _lastResult = string.Empty;
             _stateTimer = 0f;
             CancelAim();
@@ -709,6 +773,293 @@ namespace OneShotFootball
             CancelAim();
             Time.timeScale = 0f;
             _state = GameState.Paused;
+        }
+
+        private void OpenShop()
+        {
+            if (_state == GameState.Shop) return;
+            _stateBeforeShop = _state;
+            CancelAim();
+            _state = GameState.Shop;
+        }
+
+        private void CloseShop()
+        {
+            _state = _stateBeforeShop;
+            _shopStatus = "Earn tokens by completing five-shot rounds.";
+        }
+
+        private void OnShopStateChanged()
+        {
+            ApplyEquippedCosmetics();
+        }
+
+        private void ApplyEquippedCosmetics()
+        {
+            if (_shopEconomy == null) return;
+
+            string playerLook = _shopEconomy.GetEquippedId(CosmeticCategory.Player);
+            ApplyPlayerPrefabIfAvailable(playerLook);
+            if (playerLook == "player.pro.forward")
+            {
+                _skin.color = new Color(0.72f, 0.49f, 0.32f);
+                _hair.color = new Color(0.12f, 0.08f, 0.05f);
+                _blueKit.color = new Color(0.04f, 0.55f, 0.68f);
+            }
+            else if (playerLook == "player.street.legend")
+            {
+                _skin.color = new Color(0.55f, 0.34f, 0.23f);
+                _hair.color = new Color(0.04f, 0.035f, 0.06f);
+                _blueKit.color = new Color(0.36f, 0.08f, 0.58f);
+            }
+            else
+            {
+                _skin.color = new Color(0.68f, 0.43f, 0.27f);
+                _hair.color = new Color(0.10f, 0.07f, 0.05f);
+                _blueKit.color = new Color(0.05f, 0.28f, 0.91f);
+            }
+
+            string kit = _shopEconomy.GetEquippedId(CosmeticCategory.Kit);
+            if (kit == "kit.neon")
+            {
+                _blueKit.color = new Color(0.02f, 0.83f, 0.70f);
+                _blueAccent.color = Color.white;
+                _shorts.color = new Color(0.02f, 0.08f, 0.11f);
+            }
+            else if (kit == "kit.midnight")
+            {
+                _blueKit.color = new Color(0.08f, 0.09f, 0.17f);
+                _blueAccent.color = new Color(0.95f, 0.70f, 0.20f);
+                _shorts.color = new Color(0.03f, 0.04f, 0.08f);
+            }
+            else
+            {
+                _blueAccent.color = new Color(0.92f, 0.96f, 1f);
+                _shorts.color = new Color(0.04f, 0.08f, 0.18f);
+            }
+
+            string equipment = _shopEconomy.GetEquippedId(CosmeticCategory.Equipment);
+            _shoes.color = equipment == "equipment.speed.boots"
+                ? new Color(0.10f, 0.92f, 0.34f)
+                : new Color(0.06f, 0.08f, 0.12f);
+            if (_captainBandRenderer != null)
+                _captainBandRenderer.enabled = equipment == "equipment.captain.band";
+
+            if (_playerAppearance != null)
+                _playerAppearance.Apply(playerLook, kit, equipment);
+
+            string ball = _shopEconomy.GetEquippedId(CosmeticCategory.Ball);
+            if (ball == "ball.neon")
+            {
+                _ballWhite.color = new Color(0.10f, 0.88f, 0.80f);
+                _ballBlack.color = new Color(0.015f, 0.035f, 0.10f);
+            }
+            else if (ball == "ball.gold")
+            {
+                _ballWhite.color = new Color(0.91f, 0.65f, 0.14f);
+                _ballBlack.color = new Color(0.06f, 0.045f, 0.025f);
+            }
+            else
+            {
+                _ballWhite.color = new Color(0.96f, 0.97f, 0.93f);
+                _ballBlack.color = new Color(0.025f, 0.035f, 0.055f);
+            }
+        }
+
+        private void ApplyPlayerPrefabIfAvailable(string playerLookId)
+        {
+            if (_playerRoot == null || string.IsNullOrEmpty(playerLookId) || _activePlayerPrefabId == playerLookId)
+                return;
+
+            string resourcePath = null;
+            if (playerLookId == "player.striker.blue") resourcePath = "Characters/Kicker";
+            else if (playerLookId == "player.pro.forward") resourcePath = "Characters/ProForward";
+            else if (playerLookId == "player.street.legend") resourcePath = "Characters/StreetLegend";
+            if (string.IsNullOrEmpty(resourcePath))
+                return;
+
+            GameObject prefab = Resources.Load<GameObject>(resourcePath);
+            if (prefab == null)
+                return;
+
+            for (int i = _playerRoot.transform.childCount - 1; i >= 0; i--)
+                Destroy(_playerRoot.transform.GetChild(i).gameObject);
+
+            GameObject instance = Instantiate(prefab, _playerRoot.transform);
+            instance.name = prefab.name;
+            instance.transform.localPosition = Vector3.zero;
+            instance.transform.localRotation = Quaternion.identity;
+            instance.transform.localScale = Vector3.one;
+
+            _kickLegPivot = null;
+            _kickerAnimation = _playerRoot.GetComponent<FootballerAnimationDriver>();
+            if (_kickerAnimation == null) _kickerAnimation = _playerRoot.AddComponent<FootballerAnimationDriver>();
+            _kickerAnimation.RefreshAnimator();
+
+            _playerAppearance = _playerRoot.GetComponent<FootballerAppearance>();
+            if (_playerAppearance == null) _playerAppearance = _playerRoot.AddComponent<FootballerAppearance>();
+            _playerAppearance.RefreshRenderers();
+            _captainBandRenderer = null;
+            _activePlayerPrefabId = playerLookId;
+        }
+
+        private void DrawTokenPacks(Rect panel, float scale)
+        {
+            GUI.Label(new Rect(panel.x + 14f * scale, panel.y + 118f * scale,
+                panel.width - 28f * scale, 34f * scale), "TOKEN PACKS", _titleStyle);
+
+            GUI.Label(new Rect(panel.x + 16f * scale, panel.y + 154f * scale,
+                panel.width - 32f * scale, 52f * scale),
+                "Optional in-app token packs. Final prices are supplied by Google Play or Apple and shown in your local currency.",
+                _smallStyle);
+
+            string[] ids =
+            {
+                OneShotIapBridge.SmallPackId,
+                OneShotIapBridge.MediumPackId,
+                OneShotIapBridge.LargePackId
+            };
+            int[] amounts = { 250, 700, 1800 };
+            float top = panel.y + 220f * scale;
+            float rowHeight = Mathf.Min(92f * scale, (panel.height - 330f * scale) / 3f);
+            for (int i = 0; i < ids.Length; i++)
+            {
+                Rect row = new Rect(panel.x + 14f * scale, top + i * (rowHeight + 10f * scale),
+                    panel.width - 28f * scale, rowHeight);
+                GUI.Box(row, GUIContent.none, _hudStyle);
+                GUI.Label(new Rect(row.x + 12f * scale, row.y + 5f * scale,
+                    row.width - 160f * scale, 28f * scale),
+                    amounts[i] + " TOKENS", _labelStyle);
+                string price = _iapBridge != null ? _iapBridge.GetLocalizedPrice(ids[i]) : "Unavailable";
+                GUI.Label(new Rect(row.x + 12f * scale, row.y + 34f * scale,
+                    row.width - 160f * scale, 24f * scale), "STORE PRICE  " + price, _smallStyle);
+
+                bool canBuy = _iapBridge != null && _iapBridge.CanPurchaseTokenPacks &&
+                    _iapBridge.IsProductAvailable(ids[i]);
+                GUI.enabled = canBuy;
+                if (GUI.Button(new Rect(row.x + row.width - 144f * scale, row.y + 14f * scale,
+                    132f * scale, 44f * scale), "BUY PACK", _buttonStyle))
+                    _iapBridge.PurchaseTokenPack(ids[i]);
+                GUI.enabled = true;
+            }
+
+            GUI.Label(new Rect(panel.x + 14f * scale, panel.y + panel.height - 118f * scale,
+                panel.width - 28f * scale, 42f * scale),
+                _iapBridge != null ? _iapBridge.Status : "Store service is not available.", _smallStyle);
+            GUI.Label(new Rect(panel.x + 14f * scale, panel.y + panel.height - 72f * scale,
+                panel.width - 28f * scale, 38f * scale),
+                "Token checkout is disabled until account sign-in, secure receipt verification and a server wallet are implemented. Platform approval rules apply.",
+                _smallStyle);
+
+            if (GUI.Button(new Rect(panel.x + 14f * scale, panel.y + 64f * scale,
+                132f * scale, 40f * scale), "BACK TO SHOP", _buttonStyle))
+                _showTokenPacks = false;
+        }
+
+        private void DrawShop()
+        {
+            float w = Screen.width;
+            float h = Screen.height;
+            float scale = Mathf.Clamp(w / 390f, 0.78f, 1.25f);
+            Rect panel = new Rect(w * 0.045f, h * 0.045f, w * 0.91f, h * 0.91f);
+            GUI.Box(panel, GUIContent.none, _panelStyle);
+            GUI.Label(new Rect(panel.x + 12f, panel.y + 12f * scale, panel.width - 125f * scale, 38f * scale),
+                "PLAYER STORE", _titleStyle);
+            GUI.Label(new Rect(panel.x + panel.width - 118f * scale, panel.y + 20f * scale, 106f * scale, 32f * scale),
+                "TOKENS  " + _shopEconomy.TokenBalance, _labelStyle);
+            if (GUI.Button(new Rect(panel.x + panel.width - 126f * scale, panel.y + 58f * scale,
+                114f * scale, 38f * scale), "GET TOKENS", _buttonStyle))
+                _showTokenPacks = true;
+
+            if (GUI.Button(new Rect(panel.x + 12f, panel.y + 58f * scale, 90f * scale, 38f * scale), "BACK", _buttonStyle))
+            {
+                CloseShop();
+                return;
+            }
+
+            GUI.Label(new Rect(panel.x + 108f * scale, panel.y + 62f * scale, panel.width - 245f * scale, 30f * scale),
+                "Cosmetic items only • no gameplay advantage", _smallStyle);
+
+            if (_showTokenPacks)
+            {
+                DrawTokenPacks(panel, scale);
+                return;
+            }
+
+            CosmeticCategory[] categories =
+            {
+                CosmeticCategory.Player, CosmeticCategory.Kit,
+                CosmeticCategory.Equipment, CosmeticCategory.Ball
+            };
+            string[] categoryNames = { "PLAYERS", "KITS", "EQUIPMENT", "BALLS" };
+            float tabY = panel.y + 106f * scale;
+            float tabW = (panel.width - 36f * scale) * 0.5f;
+            float tabH = 39f * scale;
+            for (int i = 0; i < categories.Length; i++)
+            {
+                float x = panel.x + 12f * scale + (i % 2) * (tabW + 8f * scale);
+                float y = tabY + (i / 2) * (tabH + 6f * scale);
+                string label = (categories[i] == _shopCategory ? "• " : "") + categoryNames[i];
+                if (GUI.Button(new Rect(x, y, tabW, tabH), label, _buttonStyle))
+                {
+                    _shopCategory = categories[i];
+                    _shopStatus = "Select an item to equip or purchase.";
+                }
+            }
+
+            float listY = tabY + (tabH + 6f * scale) * 2f + 8f * scale;
+            float footerY = panel.y + panel.height - 54f * scale;
+            int itemCount = 0;
+            foreach (CosmeticItem catalogItem in _shopEconomy.Catalog)
+                if (catalogItem != null && catalogItem.category == _shopCategory) itemCount++;
+            float availableListHeight = Mathf.Max(0f, footerY - listY - 8f * scale);
+            float rowH = itemCount > 0
+                ? Mathf.Clamp((availableListHeight - Mathf.Max(0, itemCount - 1) * 7f * scale) / itemCount,
+                    54f * scale, 104f * scale)
+                : 72f * scale;
+            int shown = 0;
+            foreach (CosmeticItem item in _shopEconomy.Catalog)
+            {
+                if (item == null || item.category != _shopCategory) continue;
+                Rect row = new Rect(panel.x + 12f * scale, listY + shown * (rowH + 7f * scale),
+                    panel.width - 24f * scale, rowH);
+                GUI.Box(row, GUIContent.none, _hudStyle);
+                GUI.Label(new Rect(row.x + 10f * scale, row.y + 5f * scale, row.width - 20f * scale, 24f * scale),
+                    item.displayName, _labelStyle);
+                GUI.Label(new Rect(row.x + 10f * scale, row.y + 31f * scale, row.width - 20f * scale, 28f * scale),
+                    item.description, _smallStyle);
+
+                bool owned = _shopEconomy.IsOwned(item.id);
+                bool equipped = _shopEconomy.GetEquippedId(item.category) == item.id;
+                string action = owned ? (equipped ? "EQUIPPED" : "EQUIP") :
+                    (item.starterFree ? "FREE" : "BUY  " + item.tokenPrice + " TOKENS");
+                Rect actionRect = new Rect(row.x + row.width - 142f * scale, row.y + row.height - 36f * scale,
+                    132f * scale, 30f * scale);
+                GUI.Label(new Rect(row.x + 10f * scale, row.y + row.height - 34f * scale,
+                    row.width - 160f * scale, 28f * scale),
+                    owned ? "OWNED" : (item.starterFree ? "STARTER ITEM" : "PRICE  " + item.tokenPrice + " TOKENS"), _smallStyle);
+
+                if (!owned && !item.starterFree && GUI.Button(actionRect, action, _buttonStyle))
+                {
+                    bool purchased = _shopEconomy.TryPurchaseWithTokens(item.id);
+                    _shopStatus = purchased ? item.displayName + " unlocked." : "Not enough tokens or item unavailable.";
+                }
+                else if (owned && !equipped && GUI.Button(actionRect, action, _buttonStyle))
+                {
+                    bool equippedNow = _shopEconomy.TryEquip(item.id);
+                    _shopStatus = equippedNow ? item.displayName + " equipped." : "Could not equip this item.";
+                }
+                else if (equipped)
+                {
+                    GUI.Label(actionRect, action, _subtitleStyle);
+                }
+                shown++;
+            }
+
+            GUI.Label(new Rect(panel.x + 12f * scale, footerY, panel.width - 24f * scale, 22f * scale),
+                _shopStatus, _smallStyle);
+            GUI.Label(new Rect(panel.x + 12f * scale, footerY + 22f * scale, panel.width - 24f * scale, 22f * scale),
+                "Token packs: real-money checkout is disabled until store products and purchase verification are configured.", _smallStyle);
         }
 
         private GameObject CreatePrimitive(PrimitiveType type, string objectName, Vector3 position,
@@ -883,13 +1234,18 @@ namespace OneShotFootball
         private void OnGUI()
         {
             EnsureGuiStyles();
+            if (_state == GameState.Shop)
+            {
+                DrawShop();
+                return;
+            }
             float w = Screen.width;
             float h = Screen.height;
             float scale = Mathf.Clamp(w / 390f, 0.78f, 1.45f);
 
             if (_state == GameState.Menu)
             {
-                Rect card = new Rect(w * 0.07f, h * 0.22f, w * 0.86f, h * 0.55f);
+                Rect card = new Rect(w * 0.07f, h * 0.17f, w * 0.86f, h * 0.62f);
                 GUI.Box(card, GUIContent.none, _panelStyle);
                 GUI.Label(new Rect(card.x + 12f, card.y + 24f * scale, card.width - 24f, 60f * scale), "ONE SHOT", _titleStyle);
                 GUI.Label(new Rect(card.x + 16f, card.y + 87f * scale, card.width - 32f, 28f * scale),
@@ -899,9 +1255,13 @@ namespace OneShotFootball
                 GUI.Label(new Rect(card.x + 24f, card.y + 184f * scale, card.width - 48f, 56f * scale),
                     "Five shots. One keeper. Can you find the corners?", _smallStyle);
 
-                if (GUI.Button(new Rect(card.x + card.width * 0.10f, card.y + card.height - 94f * scale,
-                    card.width * 0.80f, 56f * scale), "PLAY 5-SHOT CHALLENGE", _buttonStyle))
+                if (GUI.Button(new Rect(card.x + card.width * 0.10f, card.y + card.height - 156f * scale,
+                    card.width * 0.80f, 54f * scale), "PLAY 5-SHOT CHALLENGE", _buttonStyle))
                     BeginRound();
+
+                if (GUI.Button(new Rect(card.x + card.width * 0.10f, card.y + card.height - 92f * scale,
+                    card.width * 0.80f, 44f * scale), "PLAYER STORE  •  " + (_shopEconomy != null ? _shopEconomy.TokenBalance : 0) + " TOKENS", _buttonStyle))
+                    OpenShop();
 
                 GUI.Label(new Rect(card.x + 12f, card.y + card.height - 34f * scale, card.width - 24f, 24f * scale),
                     "BEST SCORE  " + _bestScore, _smallStyle);
@@ -951,6 +1311,8 @@ namespace OneShotFootball
                         "SCORE  " + _score, _labelStyle);
                     GUI.Label(new Rect(card.x + 12f, card.y + 133f * scale, card.width - 24f, 32f * scale),
                         "BEST  " + _bestScore, _subtitleStyle);
+                    GUI.Label(new Rect(card.x + 12f, card.y + 169f * scale, card.width - 24f, 24f * scale),
+                        "TOKENS EARNED  +" + _roundTokenReward + "     BALANCE  " + (_shopEconomy != null ? _shopEconomy.TokenBalance : 0), _smallStyle);
                     if (GUI.Button(new Rect(card.x + 28f, card.y + card.height - 82f * scale, card.width - 56f, 54f * scale),
                         "PLAY AGAIN", _buttonStyle))
                         BeginRound();

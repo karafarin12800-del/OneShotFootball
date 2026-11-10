@@ -14,12 +14,16 @@
 - [x] Goal/miss/save outcomes and five-shot round
 - [x] Pause/resume, replay and locally persisted best score
 - [x] Editor bootstrap creates the initial scene and build-scene list
-- [ ] Unity Console clean compile
+- [ ] Unity Console clean compile (not yet verified in Editor)
 - [ ] Confirm touch/GUI controls do not conflict on a physical Android device
 - [ ] Tune physics, camera framing and goalkeeper difficulty from real play tests
 
 ## Milestone 2 — Feel and presentation
-- [ ] Kick animation, ball spin and goal/save feedback polish
+- [x] Add optional Humanoid Animator bridge for kicker and goalkeeper
+- [x] Add goalkeeper shot-target reaction and left/right dive trigger hooks
+- [ ] Import licensed Humanoid athlete FBX files and verify Avatar mapping
+- [ ] Import or create football-specific kick and keeper-dive clips
+- [ ] Polish ball spin and goal/save feedback
 - [ ] Improved seating, goal-net movement and lightweight VFX
 - [ ] Original sound effects with rights documented
 - [ ] Settings: sound, haptics and aim sensitivity
@@ -27,8 +31,13 @@
 
 ## Milestone 3 — Content
 - [ ] Challenge levels: target zones, moving targets, wall and time limit
-- [ ] Player kit palettes based on original designs
-- [ ] Unlocks from earned points without pay-to-win progression
+- [x] Cosmetic shop UI for players, kits, equipment and balls
+- [x] Free starter cosmetic per category; additional cosmetics use deterministic token prices
+- [x] Earned-token reward after completing a five-shot round
+- [x] Local cosmetic ownership and equipped-state persistence
+- [ ] Replace player appearance presets with separately imported rigged player prefabs
+- [ ] Connect token packs to authenticated player accounts and a production receipt-validation service
+- [ ] Persist a server-authoritative purchased-token balance
 - [ ] Additional stadium themes after profiling
 
 ## Milestone 4 — Release readiness

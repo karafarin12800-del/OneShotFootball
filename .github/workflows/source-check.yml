@@ -25,8 +25,18 @@ jobs:
           test -f Packages/manifest.json
           test -f Assets/Scripts/OneShotFootballGame.cs
           test -f Assets/Scripts/GoalkeeperController.cs
+          test -f Assets/Scripts/CosmeticShopEconomy.cs
+          test -f Assets/Scripts/FootballerAnimationDriver.cs
+          test -f Assets/Scripts/FootballerAppearance.cs
+          test -f Assets/Scripts/OneShotIapBridge.cs
+          test -f Assets/Editor/HumanoidCharacterAssetPipeline.cs
           test -f Assets/Editor/ProjectBootstrap.cs
           test -f Assets/Editor/AndroidBuild.cs
+          test -f Assets/Tests/EditMode/CosmeticShopEconomyTests.cs
+          test -f Docs/CHARACTER_ASSET_PIPELINE.md
+          test -f Docs/IAP_RECEIPT_VALIDATION_API.md
+          test -f Docs/PRO_SHOP_AND_CUSTOMIZATION.md
+          test -f Assets/Resources/Characters/README.md
           test -f ASSET_LICENSES.md
           python3 - <<'PY'
           import json
@@ -34,8 +44,11 @@ jobs:
           manifest = json.loads(Path("Packages/manifest.json").read_text())
           assert "dependencies" in manifest
           assert "com.unity.test-framework" in manifest["dependencies"]
+          assert manifest["dependencies"].get("com.unity.purchasing") == "5.4.4"
           project = Path("ProjectSettings/ProjectVersion.txt").read_text()
-          assert "6000.3.27f1" in project
+          assert "6000.3.27f2" in project
+          android_workflow = Path(".github/workflows/android-build.yml").read_text()
+          assert "6000.3.27f2" in android_workflow
           for p in Path("Assets").rglob("*.cs"):
               source = p.read_text(encoding="utf-8")
               assert "\x00" not in source, f"NUL byte in {p}"

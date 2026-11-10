@@ -15,11 +15,11 @@
 3. رها کردن انگشت برای شوت.
 4. دروازه‌بان به‌صورت خودکار در امتداد دروازه حرکت می‌کند.
 5. گل‌ها امتیاز می‌دهند و رکورد روی دستگاه ذخیره می‌شود.
-6. بازی ابتدا آفلاین است. آنلاین، جدول سراسری، خرید درون‌برنامه‌ای و تبلیغات تا زمان طراحی و آزمایش جداگانه فعال نیستند.
+6. بازی آفلاین است. فروشگاه تزئینی و اقتصاد توکنِ قابل‌کسب در نسخه آزمایشی پیاده‌سازی شده‌اند. خرید واقعی توکن تا زمان اتصال حساب کاربر و تأیید امن رسید خرید در سرور غیرفعال است.
 
 ## Tech stack
 
-- Unity 6000.3.27f1 (Unity 6.3 LTS baseline)
+- Unity 6000.3.27f2 (Unity 6.3 LTS patched baseline)
 - C#; runtime-generated 3D meshes/materials from original code
 - Android portrait mode; touch controls and mouse controls for Editor/desktop
 - GitHub Actions source checks
@@ -34,7 +34,7 @@
 5. Open Assets/Scenes/Main.unity and press Play.
 6. For Android, install Android Build Support, SDK/NDK tools and OpenJDK, then build for Android.
 
-The stadium, ball and stylized characters are generated from project-owned code at runtime. The first clone therefore has the required 3D geometry without paid assets. The resulting art is a low-poly prototype, not yet a polished, rigged character pack.
+The stadium, ball and fallback characters are generated from project-owned code at runtime. The store now supports player appearance presets, kits, equipment and ball cosmetics bought with earned tokens. Optional Humanoid prefab and Animator hooks are ready, but no licensed character or animation binaries are bundled yet. See Docs/CHARACTER_ASSET_PIPELINE.md. The procedural fallback remains low-poly.
 
 ## Controls
 
@@ -46,7 +46,7 @@ The stadium, ball and stylized characters are generated from project-owned code 
 
 ## Source and licensing
 
-See ASSET_LICENSES.md and Docs/COMPETITOR_RESEARCH.md. The original store-icon vector source is in BrandAssets/OneShotFootballIcon.svg; it is not yet wired into Unity player icon settings. No third-party art/model binaries are bundled in this initial commit. We reviewed public asset sources as candidates, but this baseline deliberately stays playable without downloading uncertain assets or buying asset packs.
+See ASSET_LICENSES.md and Docs/COMPETITOR_RESEARCH.md. The original store-icon vector source is in BrandAssets/OneShotFootballIcon.svg; it is not yet wired into Unity player icon settings. No third-party art/model binaries are bundled yet. Quaternius CC0 assets are documented as the first rigged-character candidate; the import and validation pipeline is prepared, but actual FBX files still need to be downloaded, inspected and imported. See ASSET_LICENSES.md.
 
 ## Build status
 
@@ -61,7 +61,10 @@ A green source-check workflow is not proof that Unity compiled the game. A succe
 - [x] Add Unity project baseline, procedural gameplay, Editor bootstrap and source/license documentation.
 - [ ] Verify Unity compilation in Editor and fix any Console errors.
 - [ ] Test touch aim, save/goal detection, pause/resume and five-shot completion on Android.
-- [ ] Improve character animation, stadium detail, sound and accessibility.
+- [x] Add shop/token economy and optional Humanoid Animator integration points.
+- [ ] Import and verify the real rigged athlete models and football-specific animation clips.
+- [ ] Connect production token purchases to authenticated receipt verification.
+- [ ] Improve stadium detail, sound and accessibility.
 - [ ] Produce and device-test an APK.
 - [ ] Only after offline gameplay is stable, evaluate online features.
 
