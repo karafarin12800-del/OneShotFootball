@@ -224,11 +224,9 @@ namespace OneShotFootball
                 installationId = GetInstallationId()
             };
 
-            byte[] body = System.Text.Encoding.UTF8.GetBytes(JsonUtility.ToJson(payload));
-            using (var request = new UnityWebRequest(receiptValidationEndpoint, UnityWebRequest.kHttpVerbPOST))
+            using (var request = UnityWebRequest.Post(
+                receiptValidationEndpoint, JsonUtility.ToJson(payload), "application/json"))
             {
-                request.uploadHandler = new UploadHandlerRaw(body);
-                request.downloadHandler = new DownloadHandlerBuffer();
                 request.SetRequestHeader("Content-Type", "application/json");
                 request.SetRequestHeader("Authorization", "Bearer " + _authenticatedPlayerSessionToken);
                 request.timeout = 25;
