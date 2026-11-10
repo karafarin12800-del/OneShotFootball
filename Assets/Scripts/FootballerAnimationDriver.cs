@@ -32,6 +32,8 @@ namespace OneShotFootball
         {
             if (animator == null)
                 animator = GetComponentInChildren<Animator>(true);
+            if (animator != null)
+                animator.applyRootMotion = false;
 
             _hasKick = HasParameter(KickHash, AnimatorControllerParameterType.Trigger);
             _hasCelebrate = HasParameter(CelebrateHash, AnimatorControllerParameterType.Trigger);
