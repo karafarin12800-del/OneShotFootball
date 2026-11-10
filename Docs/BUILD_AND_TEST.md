@@ -10,7 +10,7 @@
 
 ## Editor note
 
-The project targets Unity 6.3 LTS patch 6000.3.27f1 (released 20 October 2026). If GameCI has not yet provisioned that patch on its hosted image, run the local Unity build first and pin CI to a supported 6.3 patch; do not silently build with another editor version.
+The project is pinned to Unity 6.3 LTS patch 6000.3.27f2. This supersedes the earlier f1 pin. Use the exact project version in local Editor and CI; do not silently substitute another patch.
 
 ## Local Editor test
 
