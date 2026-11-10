@@ -26,6 +26,9 @@ namespace OneShotFootball
 
         private CosmeticShopEconomy _shopEconomy;
         private GoalkeeperController _goalkeeperController;
+        private FootballerAppearance _playerAppearance;
+        private GameObject _playerRoot;
+        private string _activePlayerPrefabId = string.Empty;
         private Renderer _captainBandRenderer;
         private FootballerAnimationDriver _kickerAnimation;
         private GameState _stateBeforeShop;
@@ -326,6 +329,7 @@ namespace OneShotFootball
         private void BuildPlayer()
         {
             var player = new GameObject("Blue Team Kicker");
+            _playerRoot = player;
             player.transform.position = new Vector3(0f, 0f, -9.1f);
             _kickerAnimation = player.AddComponent<FootballerAnimationDriver>();
 
@@ -362,24 +366,40 @@ namespace OneShotFootball
             MakePart(kickPivot.transform, PrimitiveType.Cube, "Right Boot", new Vector3(0f, -0.44f, 0.15f),
                 new Vector3(0.31f, 0.13f, 0.38f), _shoes, false);
             _kickLegPivot = kickPivot.transform;
+            _playerAppearance = player.AddComponent<FootballerAppearance>();
+            _playerAppearance.RefreshRenderers();
         }
 
         private void BuildGoalkeeper()
         {
-            var keeperRoot = new GameObject("Moving Goalkeeper");
-            keeperRoot.transform.position = new Vector3(0f, 0f, GoalLineZ - 0.62f);
+            GameObject goalkeeperPrefab = Resources.Load<GameObject>("Characters/Goalkeeper");
+            var keeperRoot = goalkeeperPrefab != null
+                ? Instantiate(goalkeeperPrefab)
+                : new GameObject("Moving Goalkeeper");
+            keeperRoot.name = "Moving Goalkeeper";
+            keeperRoot.transform.SetPositionAndRotation(
+                new Vector3(0f, 0f, GoalLineZ - 0.62f),
+                goalkeeperPrefab != null ? Quaternion.Euler(0f, 180f, 0f) : Quaternion.identity);
 
-            var keeperBody = keeperRoot.AddComponent<Rigidbody>();
+            var keeperBody = keeperRoot.GetComponent<Rigidbody>();
+            if (keeperBody == null) keeperBody = keeperRoot.AddComponent<Rigidbody>();
             keeperBody.isKinematic = true;
             keeperBody.useGravity = false;
             keeperBody.constraints = RigidbodyConstraints.FreezeRotation;
 
-            var keeperCollider = keeperRoot.AddComponent<CapsuleCollider>();
-            keeperCollider.radius = 0.59f;
-            keeperCollider.height = 1.95f;
-            keeperCollider.center = new Vector3(0f, 0.98f, 0f);
+            var keeperCollider = keeperRoot.GetComponent<CapsuleCollider>();
+            if (keeperCollider == null && keeperRoot.GetComponent<Collider>() == null)
+                keeperCollider = keeperRoot.AddComponent<CapsuleCollider>();
+            if (keeperCollider != null)
+            {
+                keeperCollider.radius = 0.59f;
+                keeperCollider.height = 1.95f;
+                keeperCollider.center = new Vector3(0f, 0.98f, 0f);
+            }
 
-            MakePart(keeperRoot.transform, PrimitiveType.Capsule, "Orange Jersey", new Vector3(0f, 1.22f, 0f),
+            if (goalkeeperPrefab == null)
+            {
+                MakePart(keeperRoot.transform, PrimitiveType.Capsule, "Orange Jersey", new Vector3(0f, 1.22f, 0f),
                 new Vector3(0.67f, 0.64f, 0.37f), _orangeKit, false);
             MakePart(keeperRoot.transform, PrimitiveType.Cube, "Keeper Shorts", new Vector3(0f, 0.64f, 0.015f),
                 new Vector3(0.63f, 0.32f, 0.38f), _shorts, false);
@@ -395,9 +415,13 @@ namespace OneShotFootball
                 new Vector3(0.19f, 0.40f, 0.19f), _blueAccent, false);
             MakePart(keeperRoot.transform, PrimitiveType.Capsule, "Keeper Right Leg", new Vector3(0.19f, 0.32f, 0f),
                 new Vector3(0.19f, 0.40f, 0.19f), _blueAccent, false);
+            }
 
-            keeperRoot.AddComponent<FootballerAnimationDriver>();
-            _goalkeeperController = keeperRoot.AddComponent<GoalkeeperController>();
+            var keeperDriver = keeperRoot.GetComponent<FootballerAnimationDriver>();
+            if (keeperDriver == null) keeperDriver = keeperRoot.AddComponent<FootballerAnimationDriver>();
+            keeperDriver.RefreshAnimator();
+            _goalkeeperController = keeperRoot.GetComponent<GoalkeeperController>();
+            if (_goalkeeperController == null) _goalkeeperController = keeperRoot.AddComponent<GoalkeeperController>();
             _goalkeeperController.Initialize(this, keeperRoot, keeperBody);
         }
 
@@ -770,6 +794,7 @@ namespace OneShotFootball
             if (_shopEconomy == null) return;
 
             string playerLook = _shopEconomy.GetEquippedId(CosmeticCategory.Player);
+            ApplyPlayerPrefabIfAvailable(playerLook);
             if (playerLook == "player.pro.forward")
             {
                 _skin.color = new Color(0.72f, 0.49f, 0.32f);
@@ -815,6 +840,9 @@ namespace OneShotFootball
             if (_captainBandRenderer != null)
                 _captainBandRenderer.enabled = equipment == "equipment.captain.band";
 
+            if (_playerAppearance != null)
+                _playerAppearance.Apply(playerLook, kit, equipment);
+
             string ball = _shopEconomy.GetEquippedId(CosmeticCategory.Ball);
             if (ball == "ball.neon")
             {
@@ -831,6 +859,43 @@ namespace OneShotFootball
                 _ballWhite.color = new Color(0.96f, 0.97f, 0.93f);
                 _ballBlack.color = new Color(0.025f, 0.035f, 0.055f);
             }
+        }
+
+        private void ApplyPlayerPrefabIfAvailable(string playerLookId)
+        {
+            if (_playerRoot == null || string.IsNullOrEmpty(playerLookId) || _activePlayerPrefabId == playerLookId)
+                return;
+
+            string resourcePath = null;
+            if (playerLookId == "player.striker.blue") resourcePath = "Characters/Kicker";
+            else if (playerLookId == "player.pro.forward") resourcePath = "Characters/ProForward";
+            else if (playerLookId == "player.street.legend") resourcePath = "Characters/StreetLegend";
+            if (string.IsNullOrEmpty(resourcePath))
+                return;
+
+            GameObject prefab = Resources.Load<GameObject>(resourcePath);
+            if (prefab == null)
+                return;
+
+            for (int i = _playerRoot.transform.childCount - 1; i >= 0; i--)
+                Destroy(_playerRoot.transform.GetChild(i).gameObject);
+
+            GameObject instance = Instantiate(prefab, _playerRoot.transform);
+            instance.name = prefab.name;
+            instance.transform.localPosition = Vector3.zero;
+            instance.transform.localRotation = Quaternion.identity;
+            instance.transform.localScale = Vector3.one;
+
+            _kickLegPivot = null;
+            _kickerAnimation = _playerRoot.GetComponent<FootballerAnimationDriver>();
+            if (_kickerAnimation == null) _kickerAnimation = _playerRoot.AddComponent<FootballerAnimationDriver>();
+            _kickerAnimation.RefreshAnimator();
+
+            _playerAppearance = _playerRoot.GetComponent<FootballerAppearance>();
+            if (_playerAppearance == null) _playerAppearance = _playerRoot.AddComponent<FootballerAppearance>();
+            _playerAppearance.RefreshRenderers();
+            _captainBandRenderer = null;
+            _activePlayerPrefabId = playerLookId;
         }
 
         private void DrawShop()
