@@ -25,6 +25,8 @@ namespace OneShotFootball
         private Color _lastResultColor = Color.white;
 
         private CosmeticShopEconomy _shopEconomy;
+        private OneShotIapBridge _iapBridge;
+        private bool _showTokenPacks;
         private GoalkeeperController _goalkeeperController;
         private FootballerAppearance _playerAppearance;
         private GameObject _playerRoot;
@@ -98,6 +100,9 @@ namespace OneShotFootball
             _shopEconomy = GetComponent<CosmeticShopEconomy>();
             if (_shopEconomy == null) _shopEconomy = gameObject.AddComponent<CosmeticShopEconomy>();
             _shopEconomy.StateChanged += OnShopStateChanged;
+            _iapBridge = GetComponent<OneShotIapBridge>();
+            if (_iapBridge == null) _iapBridge = gameObject.AddComponent<OneShotIapBridge>();
+            _iapBridge.Initialize(_shopEconomy);
             CreateMaterials();
             BuildWorld();
         }
@@ -898,6 +903,59 @@ namespace OneShotFootball
             _activePlayerPrefabId = playerLookId;
         }
 
+        private void DrawTokenPacks(Rect panel, float scale)
+        {
+            GUI.Label(new Rect(panel.x + 14f * scale, panel.y + 118f * scale,
+                panel.width - 28f * scale, 34f * scale), "TOKEN PACKS", _titleStyle);
+
+            GUI.Label(new Rect(panel.x + 16f * scale, panel.y + 154f * scale,
+                panel.width - 32f * scale, 52f * scale),
+                "Optional in-app token packs. Final prices are supplied by Google Play or Apple and shown in your local currency.",
+                _smallStyle);
+
+            string[] ids =
+            {
+                OneShotIapBridge.SmallPackId,
+                OneShotIapBridge.MediumPackId,
+                OneShotIapBridge.LargePackId
+            };
+            int[] amounts = { 250, 700, 1800 };
+            float top = panel.y + 220f * scale;
+            float rowHeight = Mathf.Min(92f * scale, (panel.height - 330f * scale) / 3f);
+            for (int i = 0; i < ids.Length; i++)
+            {
+                Rect row = new Rect(panel.x + 14f * scale, top + i * (rowHeight + 10f * scale),
+                    panel.width - 28f * scale, rowHeight);
+                GUI.Box(row, GUIContent.none, _hudStyle);
+                GUI.Label(new Rect(row.x + 12f * scale, row.y + 5f * scale,
+                    row.width - 160f * scale, 28f * scale),
+                    amounts[i] + " TOKENS", _labelStyle);
+                string price = _iapBridge != null ? _iapBridge.GetLocalizedPrice(ids[i]) : "Unavailable";
+                GUI.Label(new Rect(row.x + 12f * scale, row.y + 34f * scale,
+                    row.width - 160f * scale, 24f * scale), "STORE PRICE  " + price, _smallStyle);
+
+                bool canBuy = _iapBridge != null && _iapBridge.CanPurchaseTokenPacks &&
+                    _iapBridge.IsProductAvailable(ids[i]);
+                GUI.enabled = canBuy;
+                if (GUI.Button(new Rect(row.x + row.width - 144f * scale, row.y + 14f * scale,
+                    132f * scale, 44f * scale), "BUY PACK", _buttonStyle))
+                    _iapBridge.PurchaseTokenPack(ids[i]);
+                GUI.enabled = true;
+            }
+
+            GUI.Label(new Rect(panel.x + 14f * scale, panel.y + panel.height - 118f * scale,
+                panel.width - 28f * scale, 42f * scale),
+                _iapBridge != null ? _iapBridge.Status : "Store service is not available.", _smallStyle);
+            GUI.Label(new Rect(panel.x + 14f * scale, panel.y + panel.height - 72f * scale,
+                panel.width - 28f * scale, 38f * scale),
+                "Checkout stays disabled until an HTTPS service verifies the store receipt. Platform family-approval rules apply.",
+                _smallStyle);
+
+            if (GUI.Button(new Rect(panel.x + 14f * scale, panel.y + 64f * scale,
+                132f * scale, 40f * scale), "BACK TO SHOP", _buttonStyle))
+                _showTokenPacks = false;
+        }
+
         private void DrawShop()
         {
             float w = Screen.width;
@@ -909,6 +967,9 @@ namespace OneShotFootball
                 "PLAYER STORE", _titleStyle);
             GUI.Label(new Rect(panel.x + panel.width - 118f * scale, panel.y + 20f * scale, 106f * scale, 32f * scale),
                 "TOKENS  " + _shopEconomy.TokenBalance, _labelStyle);
+            if (GUI.Button(new Rect(panel.x + panel.width - 126f * scale, panel.y + 58f * scale,
+                114f * scale, 38f * scale), "GET TOKENS", _buttonStyle))
+                _showTokenPacks = true;
 
             if (GUI.Button(new Rect(panel.x + 12f, panel.y + 58f * scale, 90f * scale, 38f * scale), "BACK", _buttonStyle))
             {
@@ -916,8 +977,14 @@ namespace OneShotFootball
                 return;
             }
 
-            GUI.Label(new Rect(panel.x + 108f * scale, panel.y + 62f * scale, panel.width - 120f * scale, 30f * scale),
+            GUI.Label(new Rect(panel.x + 108f * scale, panel.y + 62f * scale, panel.width - 245f * scale, 30f * scale),
                 "Cosmetic items only • no gameplay advantage", _smallStyle);
+
+            if (_showTokenPacks)
+            {
+                DrawTokenPacks(panel, scale);
+                return;
+            }
 
             CosmeticCategory[] categories =
             {
@@ -941,7 +1008,15 @@ namespace OneShotFootball
             }
 
             float listY = tabY + (tabH + 6f * scale) * 2f + 8f * scale;
-            float rowH = Mathf.Clamp(h * 0.145f, 82f * scale, 116f * scale);
+            float footerY = panel.y + panel.height - 54f * scale;
+            int itemCount = 0;
+            foreach (CosmeticItem catalogItem in _shopEconomy.Catalog)
+                if (catalogItem != null && catalogItem.category == _shopCategory) itemCount++;
+            float availableListHeight = Mathf.Max(0f, footerY - listY - 8f * scale);
+            float rowH = itemCount > 0
+                ? Mathf.Clamp((availableListHeight - Mathf.Max(0, itemCount - 1) * 7f * scale) / itemCount,
+                    54f * scale, 104f * scale)
+                : 72f * scale;
             int shown = 0;
             foreach (CosmeticItem item in _shopEconomy.Catalog)
             {
@@ -981,7 +1056,6 @@ namespace OneShotFootball
                 shown++;
             }
 
-            float footerY = panel.y + panel.height - 54f * scale;
             GUI.Label(new Rect(panel.x + 12f * scale, footerY, panel.width - 24f * scale, 22f * scale),
                 _shopStatus, _smallStyle);
             GUI.Label(new Rect(panel.x + 12f * scale, footerY + 22f * scale, panel.width - 24f * scale, 22f * scale),
