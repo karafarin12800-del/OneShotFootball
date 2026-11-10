@@ -87,13 +87,20 @@ namespace OneShotFootball
             Box("Table Base", new Vector3(0f, 0.22f, 0f), new Vector3(5.25f, 0.42f, 9.35f), _wood);
             Box("Emerald Cloth", new Vector3(0f, ClothY - 0.035f, 0f), new Vector3(4.65f, 0.08f, 8.72f), _cloth);
             for (int side = -1; side <= 1; side += 2)
-                Box("Side Cushion", new Vector3(side * 2.39f, ClothY + 0.16f, 0f), new Vector3(0.2f, 0.31f, 8.55f), _wood);
+            {
+                Box("Side Cushion Upper", new Vector3(side * 2.39f, ClothY + 0.16f, -2.30f), new Vector3(0.2f, 0.31f, 3.95f), _wood);
+                Box("Side Cushion Lower", new Vector3(side * 2.39f, ClothY + 0.16f, 2.30f), new Vector3(0.2f, 0.31f, 3.95f), _wood);
+            }
             for (int end = -1; end <= 1; end += 2)
-                Box("End Cushion", new Vector3(0f, ClothY + 0.16f, end * 4.39f), new Vector3(4.65f, 0.31f, 0.2f), _wood);
+                Box("End Cushion", new Vector3(0f, ClothY + 0.16f, end * 4.39f), new Vector3(3.75f, 0.31f, 0.2f), _wood);
 
-            float[] xs = { -2.38f, 0f, 2.38f };
             foreach (float z in new[] { -4.38f, 4.38f })
-                foreach (float x in xs) MakePocket(new Vector3(x, ClothY - 0.03f, z));
+            {
+                MakePocket(new Vector3(-2.38f, ClothY, z));
+                MakePocket(new Vector3(2.38f, ClothY, z));
+            }
+            MakePocket(new Vector3(-2.38f, ClothY, 0f));
+            MakePocket(new Vector3(2.38f, ClothY, 0f));
 
             for (int i = 0; i < 6; i++)
             {
@@ -207,15 +214,21 @@ namespace OneShotFootball
 
         private void MakePocket(Vector3 position)
         {
-            var go = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            go.name = "Pocket";
-            go.transform.position = position;
-            go.transform.localScale = new Vector3(0.58f, 0.035f, 0.58f);
-            go.GetComponent<Renderer>().material = _black;
-            var trigger = go.AddComponent<SphereCollider>();
-            trigger.radius = 0.62f;
+            var visual = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            visual.name = "Pocket Visual";
+            visual.transform.position = new Vector3(position.x, ClothY + 0.01f, position.z);
+            visual.transform.localScale = new Vector3(0.58f, 0.035f, 0.58f);
+            visual.GetComponent<Renderer>().sharedMaterial = _black;
+            Collider visualCollider = visual.GetComponent<Collider>();
+            if (visualCollider != null) visualCollider.enabled = false;
+
+            // Keep the trigger independent of the flattened visual cylinder scale.
+            var triggerObject = new GameObject("Pocket Trigger");
+            triggerObject.transform.position = new Vector3(position.x, ClothY + 0.12f, position.z);
+            var trigger = triggerObject.AddComponent<BoxCollider>();
+            trigger.size = new Vector3(0.58f, 0.3f, 0.58f);
             trigger.isTrigger = true;
-            go.AddComponent<PoolPocket>().Initialize(this);
+            triggerObject.AddComponent<PoolPocket>().Initialize(this);
         }
 
         private static void Box(string name, Vector3 position, Vector3 scale, Material material)
