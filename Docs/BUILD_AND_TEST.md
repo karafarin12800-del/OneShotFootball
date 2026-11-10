@@ -2,11 +2,11 @@
 
 ## Unity setup
 
-- Editor baseline: 6000.3.27f1 (Unity 6.3 LTS).
+- Editor baseline: 6000.3.27f2 (Unity 6.3 LTS).
 - Install Android Build Support, Android SDK/NDK tools and OpenJDK.
 - Main scene: Assets/Scenes/Main.unity (created by the Editor bootstrap if absent).
 - Game entry: Assets/Scripts/OneShotFootballGame.cs.
-- No networking package, analytics SDK, purchase SDK, web API key or paid art pack is required.
+- The project references Unity IAP 5.4.4 for native-store product loading. Real-money checkout remains disabled until an authenticated account flow and secure HTTPS receipt-validation backend are configured. No paid art pack is required.
 
 ## Editor note
 
