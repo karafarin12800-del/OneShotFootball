@@ -1,6 +1,6 @@
 # Asset and license register
 
-Updated: 2026-10-23
+Updated: 2026-11-10
 
 ## Assets currently included
 
@@ -12,19 +12,21 @@ Updated: 2026-10-23
 
 No third-party model, texture, animation, audio, font or screenshot binary is included in this first commit. The runtime-created geometry is intentional: a clean clone can launch the prototype without paid packages, external downloads or broken asset references. The current 3D characters are low-poly prototype geometry, not polished rigged athlete models.
 
-## Free source packs reviewed for a later art upgrade
+## Free source packs selected for the first rigged-art integration
 
 ### Quaternius — Universal Base Characters
-- Source: https://quaternius.com/packs/universalbasecharacters.html
-- The source page lists six rigged humanoid models, FBX/OBJ/Blend/glTF, and CC0 licensing.
-- Planned use: replace/upgrade the procedural kicker and goalkeeper after a Unity import, retargeting and Android performance test.
-- Status: **not bundled or integrated yet**. The current game does not depend on this download.
+- Official pack: https://quaternius.com/packs/universalbasecharacters.html
+- Official free download: https://quaternius.itch.io/universal-base-characters
+- The author describes six Humanoid-rigged game-ready character models, FBX/glTF support, and CC0 use including commercial projects. The page gives an average of roughly 13k triangles.
+- Planned use: first stylized rigged kicker and goalkeeper models, with additional variants for player selection.
+- Status: **selected candidate, not downloaded or bundled**. The existing code has Resources prefab loader and Humanoid import validator, but actual FBX files/prefabs are still missing. The models are stylized low-poly, not photoreal athletes.
 
 ### Quaternius — Universal Animation Library
-- Source: https://quaternius.com/packs/universalanimationlibrary.html
-- The source page lists 120+ animations, FBX/GLB/Blend, and CC0 licensing; the pack is designed for humanoid retargeting.
-- Planned use: kick, running, keeper dive and save reactions.
-- Status: **not bundled or integrated yet**. Animation import and rig compatibility still need testing in Unity.
+- Official pack: https://quaternius.com/packs/universalanimationlibrary.html
+- Official free download: https://quaternius.itch.io/universal-animation-library
+- The author describes 120+ general Humanoid animations, retargeting and CC0 commercial use. The free Standard archive is a subset of the complete library.
+- Planned use: locomotion, idle, jog/run and suitable emotes.
+- Status: **selected candidate, not downloaded or bundled**. The pack description does not promise a penalty kick or goalkeeper dive clip. Those specific football animations still need to be created or sourced under a separately checked license.
 
 ### Kenney — Sports Pack
 - Source: https://kenney.nl/assets/sports-pack
@@ -55,4 +57,4 @@ Before adding any external asset binary:
 6. Do not copy competitors' screenshots, logos, uniforms, player likenesses, levels or source code.
 7. If licensing or compatibility is uncertain, do not bundle that file; keep the procedural asset as a safe fallback.
 
-These decisions intentionally prevent surprise asset purchases. The repository currently has **no mandatory paid asset dependency**.
+These decisions intentionally avoid surprise asset purchases. The repository currently has **no mandatory paid asset dependency**. No third-party 3D model or animation binary has yet been imported into the project.
