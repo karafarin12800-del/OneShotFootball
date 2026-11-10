@@ -251,7 +251,7 @@ namespace OneShotFootball
         {
             if (!AllStopped() || _power < 0.04f) return;
             _cueBall.AddForce(_aim * Mathf.Lerp(1.8f, 8.5f, _power), ForceMode.Impulse);
-            _cueBall.AddTorque(Vector3.up * (_power * 0.35f), ForceMode.Impulse);
+            _cueBall.AddTorque(Vector3.Cross(Vector3.up, _aim) * (_power * 0.35f), ForceMode.Impulse);
             _shots++;
             _status = "SHOT " + _shots;
         }
