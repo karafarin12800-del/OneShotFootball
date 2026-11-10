@@ -9,6 +9,7 @@ namespace OneShotFootball
         private Rigidbody _body;
         private FootballerAnimationDriver _animation;
         private Vector3 _homePosition;
+        private Quaternion _homeRotation;
         private float _clock;
         private bool _reacting;
         private float _reactionTimer;
@@ -19,6 +20,7 @@ namespace OneShotFootball
             _game = game;
             _body = body;
             _homePosition = root.position;
+            _homeRotation = root.rotation;
             _animation = root.GetComponent<FootballerAnimationDriver>();
         }
 
@@ -66,7 +68,7 @@ namespace OneShotFootball
             _reacting = false;
             _reactionTimer = 0f;
             _body.position = _homePosition;
-            _body.rotation = Quaternion.identity;
+            _body.rotation = _homeRotation;
         }
 
         private void OnCollisionEnter(Collision collision)
