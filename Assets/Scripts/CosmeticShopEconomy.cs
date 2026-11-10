@@ -38,6 +38,7 @@ namespace OneShotFootball
         {
             public int tokens;
             public List<string> ownedIds = new List<string>();
+            public List<string> processedStoreTransactions = new List<string>();
             public string equippedPlayer;
             public string equippedKit;
             public string equippedEquipment;
@@ -91,6 +92,7 @@ namespace OneShotFootball
             }
             if (_save == null || _save.schemaVersion != 1) _save = new SaveData();
             if (_save.ownedIds == null) _save.ownedIds = new List<string>();
+            if (_save.processedStoreTransactions == null) _save.processedStoreTransactions = new List<string>();
             _save.tokens = Mathf.Max(0, _save.tokens);
         }
 
@@ -152,6 +154,39 @@ namespace OneShotFootball
             Save();
             StateChanged?.Invoke();
             return reward;
+        }
+
+        public static int TokensForStoreProduct(string productId)
+        {
+            switch (productId)
+            {
+                case "oneshot_tokens_250": return 250;
+                case "oneshot_tokens_700": return 700;
+                case "oneshot_tokens_1800": return 1800;
+                default: return 0;
+            }
+        }
+
+        /// <summary>
+        /// Grants a fixed token pack only after the receipt-validation backend approves
+        /// the exact product and transaction. This method is internal to the runtime assembly.
+        /// </summary>
+        internal bool GrantVerifiedStoreTokenPack(string productId, string transactionId, int tokenAmount)
+        {
+            int expectedAmount = TokensForStoreProduct(productId);
+            if (_save == null || expectedAmount <= 0 || tokenAmount != expectedAmount ||
+                string.IsNullOrWhiteSpace(transactionId) || transactionId.Length > 256)
+                return false;
+
+            string transactionKey = productId + ":" + transactionId;
+            if (_save.processedStoreTransactions.Contains(transactionKey))
+                return true;
+
+            _save.tokens = Mathf.Min(999999, _save.tokens + expectedAmount);
+            _save.processedStoreTransactions.Add(transactionKey);
+            Save();
+            StateChanged?.Invoke();
+            return true;
         }
 
         private CosmeticItem FindItem(string id) => string.IsNullOrEmpty(id) ? null : catalog.Find(item => item != null && item.id == id);
