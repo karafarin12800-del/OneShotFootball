@@ -19,11 +19,19 @@ Each category includes a free starter item. Additional deterministic cosmetic it
 - Token pack purchases are not enabled by the offline wallet. A production Unity IAP adapter must verify store transactions, handle restore/refund, and prevent duplicate grants before calling the verified grant entry point.
 - Before real-money purchase is enabled, add clear localized prices, parental approval flow where required, platform-compliant purchase/restore handling, privacy disclosures, and customer support/refund guidance. Never represent local PlayerPrefs as secure purchase validation.
 
-## Current implementation boundary
-CosmeticShopEconomy.cs provides a catalog, free starter ownership, token purchase/equip logic, local persistence, and a verified-purchase integration seam. It is not yet connected to the gameplay result event, character/ball renderers, shop UI, Unity IAP, or store product configuration.
+## Current implementation status
+- The main menu opens the in-game shop.
+- Category tabs cover Players, Kits, Equipment and Balls.
+- Each category has a free starter item and additional deterministic token-priced cosmetics.
+- Buying an item deducts tokens once, saves ownership, and allows equip/unequip.
+- Cosmetic selection updates the current procedural appearance (player items are appearance presets until separate 3D player prefabs are imported).
+- Completing the fifth shot in a round grants one token reward and the result panel shows the reward/balance.
+- PlayerPrefs persistence is adequate only for the offline prototype; it is not secure storage for purchased currency.
+- A token-pack page and Unity IAP 5.4.4 native-store bridge are present. Product IDs are defined, and prices are read from the platform store.
+- Cash checkout remains disabled unless an HTTPS receipt-validation endpoint and trusted account-authentication session are configured. The repository does not include the backend or account provider.
 
 ## Art pipeline
-Professional athlete models and animations must be imported as licensed FBX/GLB assets with humanoid rigs. The reviewed Quaternius Universal Base Characters and Universal Animation Library are candidate CC0 sources, but neither is currently bundled. Before integration, validate the exact files, humanoid avatar mapping, kick/run/idle clips, goalkeeper dive clips, materials, scale, Android memory and draw-call cost. Keep a working procedural fallback until the imported rig is verified in Unity 6.3.
+The Humanoid importer, validator, optional Resources prefab loader, appearance binder and Animator parameter bridge are in place. Quaternius Universal Base Characters and Universal Animation Library are documented CC0 candidates, but the actual FBX binaries, Animator Controllers and football-specific kick/dive clips are not yet imported. Follow Docs/CHARACTER_ASSET_PIPELINE.md. Keep the procedural fallback until the imported rig is verified in Unity.
 
 ## Acceptance criteria
 1. Shop opens from the main menu and category tabs work on touch.
