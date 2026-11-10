@@ -17,8 +17,11 @@ namespace OneShotFootball
         private Transform _cueStick;
         private PhysicMaterial _ballPhysics;
         private Material _cloth, _wood, _gold, _white, _black, _cueMat;
-        private int _tokens, _pocketed, _shots, _cueStyle;
-        private bool _paused, _dragging;
+        private int _tokens, _pocketed, _objectBallsPocketed, _shots, _cueStyle;
+        private bool _paused, _dragging, _shotInProgress, _shotFoul, _eightBallPocketed, _roundWon;
+        private readonly List<int> _shotPocketed = new List<int>();
+        private readonly Material[] _ballMaterials = new Material[16];
+        private Material _floor;
         private Vector2 _dragStart, _dragNow;
         private Vector3 _aim = Vector3.forward;
         private float _power = 0.6f;
@@ -92,7 +95,8 @@ namespace OneShotFootball
                 Box("Rail Marker", new Vector3(-2.51f, 0.27f, z), new Vector3(0.025f, 0.025f, 0.48f), _gold);
                 Box("Rail Marker", new Vector3(2.51f, 0.27f, z), new Vector3(0.025f, 0.025f, 0.48f), _gold);
             }
-            Box("Studio Floor", new Vector3(0f, -0.12f, 0f), new Vector3(200f, 0.1f, 200f), Mat(new Color(0.04f, 0.05f, 0.065f), 0.1f, 0.25f));
+            _floor = Mat(new Color(0.04f, 0.05f, 0.065f), 0.1f, 0.25f);
+            Box("Studio Floor", new Vector3(0f, -0.12f, 0f), new Vector3(200f, 0.1f, 200f), _floor);
         }
 
         private void BuildCamera()
@@ -112,7 +116,13 @@ namespace OneShotFootball
             foreach (PoolBall ball in _balls) if (ball != null) Destroy(ball.gameObject);
             _balls.Clear();
             _pocketed = 0;
+            _objectBallsPocketed = 0;
             _shots = 0;
+            _shotInProgress = false;
+            _shotFoul = false;
+            _eightBallPocketed = false;
+            _roundWon = false;
+            _shotPocketed.Clear();
             _cueBall = null;
             MakeBall(0, new Vector3(0f, ClothY + Radius, -2.75f));
             int[] order = { 1, 9, 2, 10, 8, 3, 11, 4, 12, 5, 13, 6, 14, 7, 15 };
@@ -154,6 +164,8 @@ namespace OneShotFootball
         {
             if (number == 0) return _white;
             if (number == 8) return _black;
+            if (_ballMaterials[number] != null) return _ballMaterials[number];
+
             Color[] palette =
             {
                 new Color(0.95f, 0.78f, 0.08f), new Color(0.12f, 0.27f, 0.86f),
@@ -161,7 +173,8 @@ namespace OneShotFootball
                 new Color(0.98f, 0.34f, 0.06f), new Color(0.1f, 0.5f, 0.22f),
                 new Color(0.55f, 0.08f, 0.12f)
             };
-            return Mat(palette[(number - 1) % palette.Length], 0.12f, 0.38f);
+            _ballMaterials[number] = Mat(palette[(number - 1) % palette.Length], 0.12f, 0.38f);
+            return _ballMaterials[number];
         }
 
         private void BuildCueStick()
@@ -201,12 +214,24 @@ namespace OneShotFootball
         {
             Time.timeScale = 1f;
             if (_ballPhysics != null) Destroy(_ballPhysics);
+            DestroyMaterial(_cloth);
+            DestroyMaterial(_wood);
+            DestroyMaterial(_gold);
+            DestroyMaterial(_white);
+            DestroyMaterial(_black);
+            DestroyMaterial(_cueMat);
+            DestroyMaterial(_floor);
+            for (int i = 0; i < _ballMaterials.Length; i++) DestroyMaterial(_ballMaterials[i]);
         }
 
         private void Update()
         {
             if (_view != View.Playing || _paused || _cueBall == null) return;
-            if (AllStopped()) ReadAimInput();
+            if (AllStopped())
+            {
+                if (_shotInProgress) CompleteShot();
+                ReadAimInput();
+            }
             UpdateCue();
         }
 
@@ -256,6 +281,10 @@ namespace OneShotFootball
         private void Strike()
         {
             if (!AllStopped() || _power < 0.04f) return;
+            _shotInProgress = true;
+            _shotFoul = false;
+            _eightBallPocketed = false;
+            _shotPocketed.Clear();
             _cueBall.AddForce(_aim * Mathf.Lerp(1.8f, 8.5f, _power), ForceMode.Impulse);
             _cueBall.AddTorque(Vector3.Cross(Vector3.up, _aim) * (_power * 0.35f), ForceMode.Impulse);
             _shots++;
@@ -284,22 +313,76 @@ namespace OneShotFootball
         internal void OnPocket(PoolBall ball)
         {
             if (ball == null || ball.IsPocketed) return;
+
             ball.MarkPocketed();
             _pocketed++;
-            _tokens += 2;
-            PlayerPrefs.SetInt("CueLegends.Tokens", _tokens);
+            if (_shotInProgress) _shotPocketed.Add(ball.Number);
+
             if (ball.Number == 0)
             {
+                _shotFoul = true;
                 _status = "FOUL • CUE BALL SCRATCH";
                 StartCoroutine(RespawnCue());
             }
             else if (ball.Number == 8)
             {
-                _status = "8 BALL POCKETED • ROUND COMPLETE";
-                _view = View.Results;
-                PlayerPrefs.Save();
+                _eightBallPocketed = true;
+                _status = "8 BALL POCKETED • CHECKING RESULT";
             }
-            else _status = "BALL POCKETED • +2 TOKENS";
+            else
+            {
+                _objectBallsPocketed++;
+                _status = "BALL POCKETED • SHOT IN PROGRESS";
+            }
+        }
+
+        private void CompleteShot()
+        {
+            if (!_shotInProgress) return;
+
+            if (!_shotFoul)
+            {
+                int earned = 0;
+                foreach (int number in _shotPocketed)
+                    earned += PoolPracticeRules.RewardTokensForPocket(number, false);
+
+                if (earned > 0)
+                {
+                    _tokens += earned;
+                    PlayerPrefs.SetInt("CueLegends.Tokens", _tokens);
+                    PlayerPrefs.Save();
+                }
+            }
+
+            if (_eightBallPocketed)
+            {
+                bool allObjectBallsCleared = RemainingObjectBalls() == 0;
+                _roundWon = PoolPracticeRules.IsEightBallWin(allObjectBallsCleared, _shotFoul);
+                _status = _roundWon
+                    ? "VICTORY • TABLE CLEARED"
+                    : "ROUND LOST • 8 BALL POCKETED TOO EARLY OR ON A FOUL";
+                _view = View.Results;
+            }
+            else if (_shotFoul) _status = "FOUL • NO PRACTICE TOKENS AWARDED";
+            else if (_shotPocketed.Count > 0) _status = "VALID SHOT • PRACTICE TOKENS EARNED";
+            else _status = "SHOT COMPLETE";
+
+            _shotInProgress = false;
+            _shotPocketed.Clear();
+        }
+
+        private int RemainingObjectBalls()
+        {
+            int remaining = 0;
+            foreach (PoolBall ball in _balls)
+                if (ball != null && ball.Number > 0 && ball.Number != 8 && !ball.IsPocketed)
+                    remaining++;
+            return remaining;
+        }
+
+        private static void DestroyMaterial(Material material)
+        {
+            if (material != null) Destroy(material);
         }
 
         private System.Collections.IEnumerator RespawnCue()
@@ -337,7 +420,7 @@ namespace OneShotFootball
             else if (_view == View.Shop) DrawShop();
             else if (_view == View.Results)
             {
-                Panel("ROUND COMPLETE", _status, "BALLS POCKETED: " + _pocketed, "PLAY AGAIN", () => { BuildRack(); _view = View.Playing; });
+                Panel(_roundWon ? "YOU WIN" : "ROUND LOST", _status, "OBJECT BALLS POCKETED: " + _objectBallsPocketed, "PLAY AGAIN", () => { BuildRack(); _view = View.Playing; });
                 if (GUI.Button(new Rect(Screen.width / 2 - 90, Screen.height * 0.75f, 180, 42), "MAIN MENU", _button)) _view = View.Menu;
             }
         }
