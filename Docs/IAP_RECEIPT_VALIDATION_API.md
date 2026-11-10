@@ -38,6 +38,6 @@ The endpoint must:
 
 ## Current release gate
 
-The local token economy and cosmetic shop work offline, but the account/authentication system and production receipt-validation backend do not exist. Therefore real-money token checkout is intentionally disabled. The installation ID by itself is not a valid user identity. Do not enable this feature until the server wallet is the source of truth and restore/reinstall/refund behavior has been tested.
+The local token economy and cosmetic shop work offline, but the account/authentication system, production receipt-validation backend and server-authoritative token wallet do not exist. Therefore real-money token checkout is hard-disabled in code. The installation ID by itself is not a valid user identity. Do not enable this feature until purchases, cosmetic debits, restore/reinstall/refund behavior and wallet synchronization have been tested against the same server-side balance.
 
 Platform parental approval and purchase-confirmation rules must be respected. The game must not bypass family controls or store safeguards.
