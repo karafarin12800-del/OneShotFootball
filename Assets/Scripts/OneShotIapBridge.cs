@@ -22,7 +22,8 @@ namespace OneShotFootball
 
         [Header("Configure after creating the secure receipt-validation service")]
         [SerializeField] private string receiptValidationEndpoint = string.Empty;
-        [SerializeField] private bool requireAdultApprovalInStore = true;
+        [SerializeField] private bool showFamilyApprovalNotice = true;
+        private string _authenticatedPlayerSessionToken = string.Empty;
 
         private StoreController _store;
         private CosmeticShopEconomy _economy;
@@ -34,7 +35,8 @@ namespace OneShotFootball
 
         public bool IsConnected => _connected;
         public bool CanPurchaseTokenPacks =>
-            _connected && _productsFetched && _economy != null && IsSecureEndpointConfigured;
+            _connected && _productsFetched && _economy != null && IsSecureEndpointConfigured &&
+            !string.IsNullOrWhiteSpace(_authenticatedPlayerSessionToken);
         public string Status => _status;
 
         private bool IsSecureEndpointConfigured
@@ -52,10 +54,24 @@ namespace OneShotFootball
             _economy = economy;
         }
 
+        /// <summary>
+        /// Called by a trusted account-authentication integration after sign-in.
+        /// The bearer token is kept in memory only and is never serialized or logged.
+        /// </summary>
+        public void SetAuthenticatedPlayerSession(string bearerToken)
+        {
+            _authenticatedPlayerSessionToken = bearerToken ?? string.Empty;
+        }
+
+        public void ClearAuthenticatedPlayerSession()
+        {
+            _authenticatedPlayerSessionToken = string.Empty;
+        }
+
         private async void Start()
         {
 #if (UNITY_ANDROID || UNITY_IOS) && !UNITY_EDITOR
-            if (requireAdultApprovalInStore)
+            if (showFamilyApprovalNotice)
                 _status = "Purchases use the official platform flow and its family approval rules.";
 
             try
@@ -214,6 +230,7 @@ namespace OneShotFootball
                 request.uploadHandler = new UploadHandlerRaw(body);
                 request.downloadHandler = new DownloadHandlerBuffer();
                 request.SetRequestHeader("Content-Type", "application/json");
+                request.SetRequestHeader("Authorization", "Bearer " + _authenticatedPlayerSessionToken);
                 request.timeout = 25;
                 yield return request.SendWebRequest();
 
