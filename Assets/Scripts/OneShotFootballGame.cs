@@ -948,7 +948,7 @@ namespace OneShotFootball
                 _iapBridge != null ? _iapBridge.Status : "Store service is not available.", _smallStyle);
             GUI.Label(new Rect(panel.x + 14f * scale, panel.y + panel.height - 72f * scale,
                 panel.width - 28f * scale, 38f * scale),
-                "Checkout stays disabled until an HTTPS service verifies the store receipt. Platform family-approval rules apply.",
+                "Token checkout is disabled until account sign-in, secure receipt verification and a server wallet are implemented. Platform approval rules apply.",
                 _smallStyle);
 
             if (GUI.Button(new Rect(panel.x + 14f * scale, panel.y + 64f * scale,
