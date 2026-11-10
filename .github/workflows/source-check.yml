@@ -29,7 +29,7 @@ jobs:
           assert "6000.3.27f1" in Path("ProjectSettings/ProjectVersion.txt").read_text()
           for path in Path("Assets").rglob("*.cs"):
               source = path.read_text(encoding="utf-8")
-              assert "\\x00" not in source, f"NUL byte in {path}"
+              assert chr(0) not in source, f"NUL byte in {path}"
               assert source.count("{") == source.count("}"), f"Brace mismatch in {path}"
           print("CUE LEGENDS source checks passed.")
           PY
@@ -37,7 +37,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if git ls-files | grep -E '(^|/)([^/]*\\.jks|[^/]*\\.keystore|google-services\\.json|[^/]*\\.pem|[^/]*\\.p12)$'; then
+          if git ls-files | grep -E '(^|/)([^/]*[.]jks|[^/]*[.]keystore|google-services[.]json|[^/]*[.]pem|[^/]*[.]p12)$'; then
             echo "Unexpected credential/signing file is tracked."
             exit 1
           fi
