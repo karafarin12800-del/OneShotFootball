@@ -27,7 +27,7 @@ Each category includes a free starter item. Additional deterministic cosmetic it
 - Cosmetic selection updates the current procedural appearance (player items are appearance presets until separate 3D player prefabs are imported).
 - Completing the fifth shot in a round grants one token reward and the result panel shows the reward/balance.
 - PlayerPrefs persistence is adequate only for the offline prototype; it is not secure storage for purchased currency.
-- A token-pack page and Unity IAP 5.4.4 native-store bridge are present. Product IDs are defined, and prices are read from the platform store.
+- A token-pack page and Unity IAP 5.4.4 native-store bridge are present. Product IDs are defined, and localized prices can be read from the platform store. The checkout buttons remain hard-disabled until the account service, secure receipt-verification backend and server-authoritative token wallet (including cosmetic debit/synchronization) are implemented and verified.
 - Cash checkout remains disabled unless an HTTPS receipt-validation endpoint and trusted account-authentication session are configured. The repository does not include the backend or account provider.
 
 ## Art pipeline
