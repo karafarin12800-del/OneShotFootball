@@ -172,7 +172,7 @@ namespace OneShotFootball
                 return;
             }
 
-            List<CartItem> items = order.CartOrdered.Items().ToList();
+            var items = order.CartOrdered.Items().ToList();
             if (items.Count != 1 || items[0].Product == null)
             {
                 _status = "Unsupported purchase order. No tokens were granted.";
