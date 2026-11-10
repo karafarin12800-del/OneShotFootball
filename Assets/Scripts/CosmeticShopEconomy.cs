@@ -147,7 +147,7 @@ namespace OneShotFootball
         }
 
         /// <summary>Call only after platform/server receipt verification. Not a UI callback.</summary>
-        public bool GrantVerifiedTokenPack(int amount, string verifiedTransactionId)
+        internal bool GrantVerifiedTokenPack(int amount, string verifiedTransactionId)
         {
             if (amount <= 0 || string.IsNullOrWhiteSpace(verifiedTransactionId)) return false;
             string transactionKey = "OneShotFootball.IAP.Transaction." + verifiedTransactionId;
