@@ -3,18 +3,18 @@
 **AIM. STRIKE. CONQUER.** — a 3D mobile billiards project built with Unity.
 
 ## Product direction
-CUE LEGENDS converts the former OneShotFootball prototype into a mobile 8-ball pool game. The first playable slice focuses on a generated 3D table, a 16-ball rack, touch/mouse pull-back aiming, Rigidbody collisions, pocket triggers, pause and a local practice-token cue shop.
+CUE LEGENDS converts the former OneShotFootball prototype into a mobile 8-ball pool game. The first playable slice focuses on a generated 3D table, a 16-ball rack, touch/mouse pull-back aiming, Rigidbody collisions, pocket triggers, pause and a local cosmetic cue shop. Practice credits are earned only from valid object-ball pockets; scratch shots do not earn credits, and the 8 ball must be pocketed last to win the solo clear-table round.
 
 ## Current status
 This work is on the feature/cue-legends-billiards branch. It is not yet store-ready. Unity Editor compilation, Play Mode, Android build and physical-device testing must pass before release claims are made.
 
-**Online matchmaking and real-money in-app purchases are not active.** They require a production backend, a server-authoritative match model, a selected networking provider, store product configuration and server-side receipt validation. See Docs/CUE_LEGENDS_PRODUCT_PLAN.md.
+**Online matchmaking and store purchases are not active.** They require a configured Unity Multiplayer Services project, a trusted authoritative match service, store product setup and server-side receipt validation. No wagering, paid match entry or cash-out is part of the product; tokens are for direct cosmetic unlocks only. See Docs/CUE_LEGENDS_PRODUCT_PLAN.md.
 
 ## Controls
 - Drag backward from the cue ball to aim and set power.
 - Release to strike.
 - Wait until all balls stop before the next shot.
-- Practice tokens are local prototype credits, not purchased currency.
+- Practice credits are local prototype values, not purchased currency or match stakes.
 
 ## Tech
 - Unity 6000.3.27f1
@@ -35,7 +35,8 @@ This work is on the feature/cue-legends-billiards branch. It is not yet store-re
 - [x] Replace the football scene bootstrap with a generated billiards prototype.
 - [x] Add local practice-token and cosmetic cue-shop prototype.
 - [ ] Validate compilation, physics and UI in Unity Editor.
-- [ ] Tune 8-ball rules and add automated rules tests.
+- [x] Add basic solo clear-table rules and EditMode tests for practice-credit rewards and 8-ball finish conditions.
+- [ ] Implement complete tournament-standard 8-ball rules and expand physics/rules tests.
 - [ ] Select and integrate an online provider and authoritative backend.
 - [ ] Integrate store billing with server-side receipt verification.
 - [ ] Complete Android device QA, release signing and store assets.
