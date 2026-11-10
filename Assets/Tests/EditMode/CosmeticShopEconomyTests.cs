@@ -52,6 +52,15 @@ namespace OneShotFootball.Tests
             Assert.AreEqual(0, _shop.TokenBalance);
         }
 
+        [TestCase("oneshot_tokens_250", 250)]
+        [TestCase("oneshot_tokens_700", 700)]
+        [TestCase("oneshot_tokens_1800", 1800)]
+        [TestCase("unknown.product", 0)]
+        public void TokenPackSkuMappingIsFixed(string productId, int expectedTokens)
+        {
+            Assert.AreEqual(expectedTokens, CosmeticShopEconomy.TokensForStoreProduct(productId));
+        }
+
         [Test]
         public void OwnedCosmeticCanBeEquipped()
         {
