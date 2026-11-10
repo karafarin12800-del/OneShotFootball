@@ -218,6 +218,7 @@ namespace OneShotFootball
             BuildBall();
             BuildCamera();
             BuildAimGuide();
+            ApplyEquippedCosmetics();
         }
 
         private void BuildPitch()
@@ -707,6 +708,7 @@ namespace OneShotFootball
             _ballBody.angularVelocity = Vector3.zero;
             _ballTransform.SetPositionAndRotation(new Vector3(0f, BallRadius + 0.025f, BallStartZ), Quaternion.identity);
             _ballBody.isKinematic = false;
+            if (_goalkeeperController != null) _goalkeeperController.ResetForNextShot();
         }
 
         private void BeginRound()
