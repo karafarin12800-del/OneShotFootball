@@ -19,6 +19,7 @@ namespace OneShotFootball
         private Material _cloth, _wood, _gold, _white, _black, _cueMat;
         private int _tokens, _pocketed, _objectBallsPocketed, _shots, _cueStyle;
         private bool _paused, _dragging, _shotInProgress, _shotFoul, _eightBallPocketed, _roundWon;
+        private int _objectBallsRemainingAtEight = -1;
         private readonly List<int> _shotPocketed = new List<int>();
         private readonly Material[] _ballMaterials = new Material[16];
         private Material _floor;
@@ -122,6 +123,7 @@ namespace OneShotFootball
             _shotFoul = false;
             _eightBallPocketed = false;
             _roundWon = false;
+            _objectBallsRemainingAtEight = -1;
             _shotPocketed.Clear();
             _cueBall = null;
             MakeBall(0, new Vector3(0f, ClothY + Radius, -2.75f));
@@ -230,7 +232,7 @@ namespace OneShotFootball
             if (AllStopped())
             {
                 if (_shotInProgress) CompleteShot();
-                ReadAimInput();
+                if (_view == View.Playing) ReadAimInput();
             }
             UpdateCue();
         }
@@ -327,6 +329,7 @@ namespace OneShotFootball
             else if (ball.Number == 8)
             {
                 _eightBallPocketed = true;
+                _objectBallsRemainingAtEight = RemainingObjectBalls();
                 _status = "8 BALL POCKETED • CHECKING RESULT";
             }
             else
@@ -356,7 +359,7 @@ namespace OneShotFootball
 
             if (_eightBallPocketed)
             {
-                bool allObjectBallsCleared = RemainingObjectBalls() == 0;
+                bool allObjectBallsCleared = _objectBallsRemainingAtEight == 0;
                 _roundWon = PoolPracticeRules.IsEightBallWin(allObjectBallsCleared, _shotFoul);
                 _status = _roundWon
                     ? "VICTORY • TABLE CLEARED"
