@@ -197,6 +197,12 @@ namespace OneShotFootball
             go.GetComponent<Renderer>().material = material;
         }
 
+        private void OnDestroy()
+        {
+            Time.timeScale = 1f;
+            if (_ballPhysics != null) Destroy(_ballPhysics);
+        }
+
         private void Update()
         {
             if (_view != View.Playing || _paused || _cueBall == null) return;
@@ -299,12 +305,8 @@ namespace OneShotFootball
         private System.Collections.IEnumerator RespawnCue()
         {
             yield return new WaitForSeconds(0.8f);
-            if (_cueBall != null)
-            {
-                _cueBall.velocity = Vector3.zero;
-                _cueBall.angularVelocity = Vector3.zero;
-                _cueBall.position = new Vector3(0f, ClothY + Radius, -2.75f);
-            }
+            PoolBall cue = _balls.Find(ball => ball != null && ball.Number == 0);
+            if (cue != null) cue.Restore(new Vector3(0f, ClothY + Radius, -2.75f));
         }
 
         private void OnGUI()
@@ -410,6 +412,18 @@ namespace OneShotFootball
             IsPocketed = true;
             if (Body != null) { Body.velocity = Vector3.zero; Body.angularVelocity = Vector3.zero; }
             gameObject.SetActive(false);
+        }
+
+        public void Restore(Vector3 position)
+        {
+            IsPocketed = false;
+            gameObject.SetActive(true);
+            if (Body != null)
+            {
+                Body.velocity = Vector3.zero;
+                Body.angularVelocity = Vector3.zero;
+                Body.position = position;
+            }
         }
 
         public void NotifyPocket() { if (_owner != null) _owner.OnPocket(this); }
